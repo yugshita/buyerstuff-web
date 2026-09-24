@@ -120,3 +120,27 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     </div>
   );
 }
+async function handleSendOtp(e: React.FormEvent) {
+  e.preventDefault();
+  setLoading(true);
+
+  // Clean raw digits and force international + format
+  let rawDigits = phone.replace(/\D/g, ''); // Removes any spaces or symbols
+  
+  // If user enters 10 digits (e.g. 8527788315), prepend +91
+  if (rawDigits.length === 10) {
+    rawDigits = `91${rawDigits}`;
+  }
+  
+  const formattedPhone = `+${rawDigits}`;
+
+  const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
+  setLoading(false);
+
+  if (error) {
+    alert(`Error: ${error.message}`);
+  } else {
+    setPhone(formattedPhone);
+    setStep('otp');
+  }
+}
