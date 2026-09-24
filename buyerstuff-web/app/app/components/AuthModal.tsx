@@ -252,3 +252,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     </div>
   );
 }
+interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAuthSuccess: () => void; // Changed from onSuccess to onAuthSuccess
+}
+
+export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
