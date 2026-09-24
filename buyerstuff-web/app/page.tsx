@@ -480,3 +480,27 @@ export default function Home() {
     </div>
   );
 }
+import ContactModal from './components/ContactModal';
+const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+{/* Replace the existing <footer> section with this */}
+<footer className="bg-gray-800 text-gray-300 py-6 border-t mt-auto">
+  <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+    <p>© 2026 BuyerStuff.com. All rights reserved.</p>
+    <div className="flex space-x-6">
+      <a href="#" className="hover:text-white">Privacy Policy</a>
+      <a href="#" className="hover:text-white">Terms & Conditions</a>
+      <button 
+        onClick={() => setIsContactModalOpen(true)} 
+        className="hover:text-white underline cursor-pointer"
+      >
+        Contact Us
+      </button>
+    </div>
+  </div>
+</footer>
+
+{/* Contact Modal */}
+<ContactModal
+  isOpen={isContactModalOpen}
+  onClose={() => setIsContactModalOpen(false)}
+/>
