@@ -11,7 +11,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
-  const [phone, setPhone] = useState('+91');
+  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
@@ -21,12 +21,24 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim() });
+
+    // Clean raw digits and force international + format
+    let rawDigits = phone.replace(/\D/g, ''); // Removes spaces, dashes, or symbols
+
+    // If user enters 10 digits (e.g. 8527788315), prepend 91
+    if (rawDigits.length === 10) {
+      rawDigits = `91${rawDigits}`;
+    }
+
+    const formattedPhone = `+${rawDigits}`;
+
+    const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
     setLoading(false);
 
     if (error) {
       alert(`Error: ${error.message}`);
     } else {
+      setPhone(formattedPhone);
       setStep('otp');
     }
   }
@@ -34,6 +46,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+
     const { error } = await supabase.auth.verifyOtp({
       phone: phone.trim(),
       token: otp.trim(),
@@ -53,7 +66,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">
-        <button onClick={onClose} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600">
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+        >
           <X className="w-5 h-5" />
         </button>
 
@@ -77,7 +93,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 9876543210"
+                  placeholder="8527788315 or +91 8527788315"
                   className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -119,28 +135,4 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       </div>
     </div>
   );
-}
-async function handleSendOtp(e: React.FormEvent) {
-  e.preventDefault();
-  setLoading(true);
-
-  // Clean raw digits and force international + format
-  let rawDigits = phone.replace(/\D/g, ''); // Removes any spaces or symbols
-  
-  // If user enters 10 digits (e.g. 8527788315), prepend +91
-  if (rawDigits.length === 10) {
-    rawDigits = `91${rawDigits}`;
-  }
-  
-  const formattedPhone = `+${rawDigits}`;
-
-  const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
-  setLoading(false);
-
-  if (error) {
-    alert(`Error: ${error.message}`);
-  } else {
-    setPhone(formattedPhone);
-    setStep('otp');
-  }
 }
