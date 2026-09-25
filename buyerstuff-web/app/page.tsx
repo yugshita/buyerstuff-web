@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import ContactModal from './components/ContactModal';
+import ProductDetailsModal from './components/ProductDetailsModal';
 import {
   Upload,
   Store,
@@ -17,7 +18,7 @@ import {
   Shirt,
   BookOpen,
   Grid,
-  Phone,
+  Eye,
 } from 'lucide-react';
 
 export default function Home() {
@@ -28,6 +29,10 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
+  // Selected Product Modal State
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // Form State for Sellers
   const [title, setTitle] = useState('');
@@ -59,6 +64,11 @@ export default function Home() {
     setWishlist((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
+  }
+
+  function openProductDetails(item: any) {
+    setSelectedProduct(item);
+    setIsDetailsModalOpen(true);
   }
 
   async function handleCreateListing(e: React.FormEvent) {
@@ -259,7 +269,8 @@ export default function Home() {
                     return (
                       <div
                         key={item.id}
-                        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col relative group"
+                        onClick={() => openProductDetails(item)}
+                        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col relative group cursor-pointer"
                       >
                         {/* Image + Wishlist Heart */}
                         <div className="relative aspect-square w-full bg-gray-100 overflow-hidden">
@@ -269,7 +280,10 @@ export default function Home() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           <button
-                            onClick={() => toggleWishlist(item.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleWishlist(item.id);
+                            }}
                             className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-md rounded-full shadow hover:bg-white transition"
                           >
                             <Heart
@@ -298,13 +312,16 @@ export default function Home() {
                             </div>
                           </div>
 
-                          <a
-                            href={`tel:${item.seller_phone}`}
-                            className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center shadow-sm"
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openProductDetails(item);
+                            }}
+                            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center shadow-sm"
                           >
-                            <Phone className="w-4 h-4 mr-2" />
-                            Call Seller ({item.seller_phone || 'Contact'})
-                          </a>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </button>
                         </div>
                       </div>
                     );
@@ -367,6 +384,17 @@ export default function Home() {
                     onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                     className="w-full p-2.5 border rounded-xl text-gray-600"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Describe condition, working order, original bill, etc."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full p-3 border rounded-xl text-gray-800"
+                  ></textarea>
                 </div>
 
                 <hr className="my-6" />
@@ -480,6 +508,13 @@ export default function Home() {
       <ContactModal
         isOpen={isContactModalOpen}
         onClose={() => setIsContactModalOpen(false)}
+      />
+
+      {/* Product Details Modal */}
+      <ProductDetailsModal
+        item={selectedProduct}
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
       />
 
       {/* Footer */}
