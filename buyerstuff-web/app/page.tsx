@@ -536,3 +536,16 @@ export default function Home() {
     </div>
   );
 }
+{/* Product Details Modal with Refresh Prop */}
+<ProductDetailsModal
+  item={selectedProduct}
+  isOpen={isDetailsModalOpen}
+  onClose={() => setIsDetailsModalOpen(false)}
+  onRefresh={fetchListings}
+/>
+{/* Inside the grid mapping in page.tsx */}
+{item.status === 'sold' && (
+  <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider z-10">
+    SOLD OUT
+  </span>
+)}
