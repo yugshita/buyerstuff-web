@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from './supabase';
+import AuthModal from './components/AuthModal';
 import ContactModal from './components/ContactModal';
 import ProductDetailsModal from './components/ProductDetailsModal';
 import {
@@ -21,19 +22,25 @@ import {
   Eye,
   ChevronDown,
   Globe,
+  User,
+  LogOut,
+  PackageCheck,
 } from 'lucide-react';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
+  const [activeTab, setActiveTab] = useState<'buyer' | 'seller' | 'my-catalog'>('buyer');
   const [listings, setListings] = useState<any[]>([]);
+  const [myListings, setMyListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedCountry, setSelectedCountry] = useState<string>('All Countries');
   const [wishlist, setWishlist] = useState<string[]>([]);
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
-  // Selected Product Modal State
+  // User & Modal States
+  const [user, setUser] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
@@ -52,7 +59,6 @@ export default function Home() {
   const [fullAddress, setFullAddress] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // Major World Countries List for Filtering & Listing
   const majorCountries = [
     'All Countries',
     'India',
@@ -78,28 +84,46 @@ export default function Home() {
     'France',
     'Singapore',
     'Japan',
-    'Saudi Arabia',
-    'Qatar',
-    'Malaysia',
-    'Netherlands',
-    'Italy',
-    'Spain',
-    'Brazil',
-    'Mexico',
-    'South Africa',
-    'New Zealand',
     'Other',
   ];
 
   useEffect(() => {
+    checkUserSession();
     fetchListings();
   }, []);
+
+  async function checkUserSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      setUser(session.user);
+      fetchUserListings(session.user.id);
+    } else {
+      setUser(null);
+      setMyListings([]);
+    }
+  }
 
   async function fetchListings() {
     setLoading(true);
     const { data } = await supabase.from('listings').select('*').order('created_at', { ascending: false });
     if (data) setListings(data);
     setLoading(false);
+  }
+
+  async function fetchUserListings(userId: string) {
+    const { data } = await supabase
+      .from('listings')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (data) setMyListings(data);
+  }
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    setUser(null);
+    setMyListings([]);
+    setActiveTab('buyer');
   }
 
   function toggleWishlist(id: string) {
@@ -115,6 +139,11 @@ export default function Home() {
 
   async function handleCreateListing(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
 
     if (!imageFile) {
       alert('Please select an image for your product.');
@@ -137,6 +166,7 @@ export default function Home() {
 
       const { error: insertError } = await supabase.from('listings').insert([
         {
+          user_id: user.id,
           title,
           description,
           price: parseFloat(price),
@@ -156,20 +186,14 @@ export default function Home() {
 
       if (insertError) throw insertError;
 
-      alert('Product listed successfully!');
+      alert('Product published to catalog successfully!');
       setTitle('');
       setDescription('');
       setPrice('');
       setProductAge('');
-      setSellerName('');
-      setSellerPhone('');
-      setState('');
-      setCity('');
-      setPincode('');
-      setLocalArea('');
-      setFullAddress('');
       setImageFile(null);
-      setActiveTab('buyer');
+      fetchUserListings(user.id);
+      setActiveTab('my-catalog');
       fetchListings();
     } catch (err: any) {
       alert(`Error: ${err.message}`);
@@ -187,13 +211,11 @@ export default function Home() {
     { name: 'Books', icon: BookOpen },
   ];
 
-  // Combined Filter Logic: Search + Category + Country
   const filteredListings = listings.filter((item) => {
     const matchesSearch =
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.country?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.local_area?.toLowerCase().includes(searchQuery.toLowerCase());
+      item.country?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesCategory =
       selectedCategory === 'All' ||
@@ -212,7 +234,6 @@ export default function Home() {
       {/* Top Navbar */}
       <header className="bg-blue-600 text-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
-          {/* Logo */}
           <div className="flex items-center space-x-2 cursor-pointer shrink-0" onClick={() => setActiveTab('buyer')}>
             <Store className="w-7 h-7 text-yellow-300" />
             <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">
@@ -220,7 +241,6 @@ export default function Home() {
             </h1>
           </div>
 
-          {/* Global Country Filter Dropdown */}
           <div className="relative flex items-center bg-blue-700/80 hover:bg-blue-700 rounded-xl px-3 py-1.5 border border-blue-400/40 text-xs md:text-sm font-semibold cursor-pointer">
             <Globe className="w-4 h-4 text-yellow-300 mr-1.5 shrink-0" />
             <select
@@ -237,7 +257,6 @@ export default function Home() {
             <ChevronDown className="w-3.5 h-3.5 text-blue-200 absolute right-2 pointer-events-none" />
           </div>
 
-          {/* Nav Action Buttons */}
           <div className="flex items-center space-x-2 shrink-0">
             <button
               onClick={() => setActiveTab('buyer')}
@@ -249,7 +268,10 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => setActiveTab('seller')}
+              onClick={() => {
+                if (!user) setIsAuthModalOpen(true);
+                else setActiveTab('seller');
+              }}
               className={`px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center ${
                 activeTab === 'seller' ? 'bg-yellow-400 text-gray-900 shadow-sm' : 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
               }`}
@@ -257,6 +279,35 @@ export default function Home() {
               <Upload className="w-3.5 h-3.5 mr-1" />
               Sell Item
             </button>
+
+            {user ? (
+              <div className="flex items-center space-x-2 border-l border-blue-500 pl-2">
+                <button
+                  onClick={() => setActiveTab('my-catalog')}
+                  className={`px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold flex items-center ${
+                    activeTab === 'my-catalog' ? 'bg-white text-blue-600 shadow-sm' : 'bg-blue-700 hover:bg-blue-800'
+                  }`}
+                >
+                  <PackageCheck className="w-3.5 h-3.5 mr-1" />
+                  My Catalog ({myListings.length})
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  title="Sign Out"
+                  className="p-1.5 hover:bg-blue-700 rounded-xl text-gray-200 transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="bg-white/20 hover:bg-white/30 text-white font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition flex items-center"
+              >
+                <User className="w-3.5 h-3.5 mr-1" />
+                Seller Login
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -265,7 +316,6 @@ export default function Home() {
       <main className="flex-grow w-full">
         {activeTab === 'buyer' && (
           <>
-            {/* Hero Banner */}
             <section className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white py-10 px-4 shadow-inner">
               <div className="max-w-5xl mx-auto text-center space-y-4">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/30 rounded-full text-xs font-semibold text-yellow-300 border border-blue-400/30">
@@ -275,16 +325,15 @@ export default function Home() {
                   Buy & Sell Great Items in {selectedCountry}
                 </h2>
                 <p className="text-blue-100 text-xs md:text-sm max-w-2xl mx-auto">
-                  Discover local and global deals on electronics, vehicles, furniture, and more. Direct seller contacts, zero listing fees.
+                  Discover deals on electronics, vehicles, furniture, and more. Direct contacts, zero listing fees.
                 </p>
 
-                {/* Search Bar */}
                 <div className="max-w-2xl mx-auto pt-2">
                   <div className="relative flex items-center">
                     <Search className="absolute left-4 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder={`Search items, city, or postal code in ${selectedCountry}...`}
+                      placeholder={`Search items in ${selectedCountry}...`}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-gray-900 bg-white shadow-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 transition text-sm"
@@ -294,7 +343,6 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Category Filter Pills */}
             <section className="max-w-7xl mx-auto px-4 pt-6">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-gray-800 text-base">Browse Categories</h3>
@@ -324,7 +372,6 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Product Catalog Grid */}
             <section className="max-w-7xl mx-auto px-4 py-6">
               {loading ? (
                 <div className="text-center py-20 text-gray-500 font-medium">Loading catalog...</div>
@@ -332,9 +379,7 @@ export default function Home() {
                 <div className="text-center py-16 bg-white rounded-2xl shadow-sm border p-8 max-w-md mx-auto">
                   <Store className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <h4 className="font-bold text-gray-800 text-lg">No Items in {selectedCountry}</h4>
-                  <p className="text-gray-500 text-sm mt-1">
-                    Try selecting "All Countries" or change your category filter.
-                  </p>
+                  <p className="text-gray-500 text-sm mt-1">Try selecting "All Countries".</p>
                   <button
                     onClick={() => setSelectedCountry('All Countries')}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition"
@@ -354,7 +399,6 @@ export default function Home() {
                         onClick={() => openProductDetails(item)}
                         className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col relative group cursor-pointer"
                       >
-                        {/* Image + Wishlist Heart + Sold Badge */}
                         <div className="relative aspect-square w-full bg-gray-100 overflow-hidden">
                           <img
                             src={item.images?.[0] || 'https://via.placeholder.com/300'}
@@ -383,11 +427,10 @@ export default function Home() {
                           </button>
                         </div>
 
-                        {/* Content */}
                         <div className="p-4 flex flex-col flex-grow">
                           <h3 className="font-bold text-gray-900 text-base truncate">{item.title}</h3>
                           <p className="text-2xl font-black text-blue-600 mt-1">
-                            {item.price ? `${item.price.toLocaleString()}` : 'Contact for Price'}
+                            {item.price ? `₹${item.price.toLocaleString('en-IN')}` : 'Contact for Price'}
                           </p>
 
                           <div className="space-y-1 mt-3 text-xs text-gray-500">
@@ -423,6 +466,56 @@ export default function Home() {
           </>
         )}
 
+        {/* MY CATALOG DASHBOARD */}
+        {activeTab === 'my-catalog' && user && (
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Seller Dashboard & Catalog</h2>
+                <p className="text-sm text-gray-500">Logged in email: <strong className="text-gray-800">{user.email}</strong></p>
+              </div>
+              <button
+                onClick={() => setActiveTab('seller')}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center transition shadow-sm"
+              >
+                <Upload className="w-4 h-4 mr-2" /> Add New Item to Catalog
+              </button>
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Published Catalog ({myListings.length})</h3>
+
+            {myListings.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border p-6">
+                <PackageCheck className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">You haven't added any items to your seller catalog yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {myListings.map((item) => (
+                  <div key={item.id} className="bg-white rounded-2xl border p-4 shadow-sm flex space-x-4 items-center">
+                    <img src={item.images?.[0]} alt={item.title} className="w-20 h-20 object-cover rounded-xl shrink-0" />
+                    <div className="flex-grow min-w-0">
+                      <h4 className="font-bold text-gray-900 truncate">{item.title}</h4>
+                      <p className="text-blue-600 font-black mt-0.5">₹{item.price?.toLocaleString('en-IN')}</p>
+                      <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        item.status === 'sold' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {item.status === 'sold' ? 'SOLD' : 'ACTIVE'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => openProductDetails(item)}
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition shrink-0"
+                    >
+                      Manage
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* SELLER FORM */}
         {activeTab === 'seller' && (
           <div className="max-w-2xl mx-auto px-4 py-8">
@@ -443,11 +536,11 @@ export default function Home() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                     <input
                       type="number"
                       required
-                      placeholder="e.g. 500"
+                      placeholder="e.g. 35000"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500"
@@ -481,7 +574,7 @@ export default function Home() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
                   <textarea
                     rows={2}
-                    placeholder="Describe condition, features, warranty, shipping terms..."
+                    placeholder="Describe condition, working order, original bill..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full p-3 border rounded-xl text-gray-800"
@@ -508,7 +601,7 @@ export default function Home() {
                     <input
                       type="tel"
                       required
-                      placeholder="e.g. +1 5550123 or +91 9876543210"
+                      placeholder="+91 9876543210"
                       value={sellerPhone}
                       onChange={(e) => setSellerPhone(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
@@ -536,7 +629,7 @@ export default function Home() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. California / UP"
+                      placeholder="e.g. Uttar Pradesh"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
@@ -547,7 +640,7 @@ export default function Home() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. London / New York"
+                      placeholder="e.g. Ghaziabad"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
@@ -557,22 +650,22 @@ export default function Home() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">ZIP / Postal Code</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pincode / Postal Code</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. 10001 or 201002"
+                      placeholder="201002"
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Local Area / District</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Local Area</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Manhattan / Downtown"
+                      placeholder="e.g. Pratap Nagar"
                       value={localArea}
                       onChange={(e) => setLocalArea(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
@@ -581,11 +674,11 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Address / Location</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
                   <textarea
                     required
                     rows={2}
-                    placeholder="Street, Building / Neighborhood details"
+                    placeholder="House No, Street Name"
                     value={fullAddress}
                     onChange={(e) => setFullAddress(e.target.value)}
                     className="w-full p-3 border rounded-xl text-gray-800"
@@ -597,7 +690,7 @@ export default function Home() {
                   disabled={loading}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow transition"
                 >
-                  {loading ? 'Publishing...' : 'Publish Global Listing'}
+                  {loading ? 'Publishing...' : 'Publish Listing'}
                 </button>
               </form>
             </div>
@@ -605,21 +698,25 @@ export default function Home() {
         )}
       </main>
 
-      {/* Contact Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={checkUserSession}
+      />
+
       <ContactModal
         isOpen={isContactModalOpen}
         onClose={() => setIsContactModalOpen(false)}
       />
 
-      {/* Product Details Modal */}
       <ProductDetailsModal
         item={selectedProduct}
         isOpen={isDetailsModalOpen}
+        currentUser={user}
         onClose={() => setIsDetailsModalOpen(false)}
         onRefresh={fetchListings}
       />
 
-      {/* Footer */}
       <footer className="bg-gray-900 text-gray-300 py-8 border-t mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
           <p>© 2026 BuyerStuff.com. All rights reserved.</p>
