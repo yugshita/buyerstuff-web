@@ -19,6 +19,7 @@ import {
   BookOpen,
   Grid,
   Eye,
+  ChevronDown,
 } from 'lucide-react';
 
 export default function Home() {
@@ -27,6 +28,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedCity, setSelectedCity] = useState<string>('All India');
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
@@ -48,6 +50,20 @@ export default function Home() {
   const [localArea, setLocalArea] = useState('');
   const [fullAddress, setFullAddress] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // Major Cities List for Dropdown Selector
+  const majorCities = [
+    'All India',
+    'Delhi NCR',
+    'Ghaziabad',
+    'Noida',
+    'Mumbai',
+    'Bengaluru',
+    'Hyderabad',
+    'Kolkata',
+    'Chennai',
+    'Pune',
+  ];
 
   useEffect(() => {
     fetchListings();
@@ -145,47 +161,77 @@ export default function Home() {
     { name: 'Books', icon: BookOpen },
   ];
 
+  // Combined Filter Logic: Search + Category + City
   const filteredListings = listings.filter((item) => {
     const matchesSearch =
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.city?.toLowerCase().includes(searchQuery.toLowerCase());
+      item.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.local_area?.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesCategory =
       selectedCategory === 'All' ||
       item.title?.toLowerCase().includes(selectedCategory.toLowerCase()) ||
       item.description?.toLowerCase().includes(selectedCategory.toLowerCase());
 
-    return matchesSearch && matchesCategory;
+    const matchesCity =
+      selectedCity === 'All India' ||
+      item.city?.toLowerCase().includes(selectedCity.toLowerCase()) ||
+      (selectedCity === 'Delhi NCR' &&
+        ['delhi', 'noida', 'ghaziabad', 'gurugram', 'faridabad'].some((c) =>
+          item.city?.toLowerCase().includes(c)
+        ));
+
+    return matchesSearch && matchesCategory && matchesCity;
   });
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       {/* Top Navbar */}
       <header className="bg-blue-600 text-white shadow-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setActiveTab('buyer')}>
-            <Store className="w-8 h-8 text-yellow-300" />
-            <h1 className="text-2xl font-extrabold tracking-tight">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
+          {/* Logo */}
+          <div className="flex items-center space-x-2 cursor-pointer shrink-0" onClick={() => setActiveTab('buyer')}>
+            <Store className="w-7 h-7 text-yellow-300" />
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">
               BuyerStuff<span className="text-yellow-300">.com</span>
             </h1>
           </div>
 
-          <div className="flex items-center space-x-3">
+          {/* Quick City Dropdown Selector */}
+          <div className="relative flex items-center bg-blue-700/80 hover:bg-blue-700 rounded-xl px-3 py-1.5 border border-blue-400/40 text-xs md:text-sm font-semibold cursor-pointer">
+            <MapPin className="w-4 h-4 text-yellow-300 mr-1.5 shrink-0" />
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="bg-transparent text-white cursor-pointer focus:outline-none pr-4 font-semibold appearance-none"
+            >
+              {majorCities.map((cityName) => (
+                <option key={cityName} value={cityName} className="text-gray-900 bg-white font-medium">
+                  {cityName}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-blue-200 absolute right-2 pointer-events-none" />
+          </div>
+
+          {/* Nav Action Buttons */}
+          <div className="flex items-center space-x-2 shrink-0">
             <button
               onClick={() => setActiveTab('buyer')}
-              className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs md:text-sm font-semibold transition ${
                 activeTab === 'buyer' ? 'bg-white text-blue-600 shadow-sm' : 'hover:bg-blue-700'
               }`}
             >
-              Browse Products
+              Browse
             </button>
 
             <button
               onClick={() => setActiveTab('seller')}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center ${
                 activeTab === 'seller' ? 'bg-yellow-400 text-gray-900 shadow-sm' : 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
               }`}
             >
-              <Upload className="w-4 h-4 mr-1.5" />
+              <Upload className="w-3.5 h-3.5 mr-1" />
               Sell Item
             </button>
           </div>
@@ -197,15 +243,15 @@ export default function Home() {
         {activeTab === 'buyer' && (
           <>
             {/* Hero Banner */}
-            <section className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white py-12 px-4 shadow-inner">
+            <section className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white py-10 px-4 shadow-inner">
               <div className="max-w-5xl mx-auto text-center space-y-4">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/30 rounded-full text-xs font-semibold text-yellow-300 border border-blue-400/30">
                   <Sparkles className="w-3.5 h-3.5" /> Verified Peer-to-Peer Marketplace
                 </div>
-                <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
-                  Buy & Sell Great Items Near You
+                <h2 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">
+                  Buy & Sell Great Items in {selectedCity}
                 </h2>
-                <p className="text-blue-100 text-sm md:text-base max-w-2xl mx-auto">
+                <p className="text-blue-100 text-xs md:text-sm max-w-2xl mx-auto">
                   Discover local deals on electronics, vehicles, furniture, and more. Direct seller contacts, zero listing fees.
                 </p>
 
@@ -215,10 +261,10 @@ export default function Home() {
                     <Search className="absolute left-4 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder="Search phones, laptops, city, pincode..."
+                      placeholder={`Search items in ${selectedCity}...`}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-gray-900 bg-white shadow-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 transition"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-gray-900 bg-white shadow-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 transition text-sm"
                     />
                   </div>
                 </div>
@@ -226,11 +272,11 @@ export default function Home() {
             </section>
 
             {/* Category Filter Pills */}
-            <section className="max-w-7xl mx-auto px-4 pt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-800 text-lg">Browse Categories</h3>
-                <span className="text-xs font-medium text-gray-500">
-                  Showing {filteredListings.length} available items
+            <section className="max-w-7xl mx-auto px-4 pt-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-gray-800 text-base">Browse Categories</h3>
+                <span className="text-xs font-medium text-gray-500 bg-gray-200/60 px-2.5 py-1 rounded-full">
+                  Location: <strong className="text-blue-600">{selectedCity}</strong> ({filteredListings.length} items)
                 </span>
               </div>
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -241,7 +287,7 @@ export default function Home() {
                     <button
                       key={cat.name}
                       onClick={() => setSelectedCategory(cat.name)}
-                      className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition border ${
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition border ${
                         isSelected
                           ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                           : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
@@ -256,14 +302,22 @@ export default function Home() {
             </section>
 
             {/* Product Catalog Grid */}
-            <section className="max-w-7xl mx-auto px-4 py-8">
+            <section className="max-w-7xl mx-auto px-4 py-6">
               {loading ? (
                 <div className="text-center py-20 text-gray-500 font-medium">Loading catalog...</div>
               ) : filteredListings.length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-2xl shadow-sm border p-8 max-w-md mx-auto">
+                <div className="text-center py-16 bg-white rounded-2xl shadow-sm border p-8 max-w-md mx-auto">
                   <Store className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <h4 className="font-bold text-gray-800 text-lg">No Listings Found</h4>
-                  <p className="text-gray-500 text-sm mt-1">Try searching for a different item or city name.</p>
+                  <h4 className="font-bold text-gray-800 text-lg">No Items in {selectedCity}</h4>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Try selecting "All India" or change your category filter.
+                  </p>
+                  <button
+                    onClick={() => setSelectedCity('All India')}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition"
+                  >
+                    View All India Items
+                  </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -320,7 +374,7 @@ export default function Home() {
                             </div>
                             <div className="flex items-center">
                               <MapPin className="w-3.5 h-3.5 mr-1.5 text-gray-400 shrink-0" />
-                              <span className="truncate">
+                              <span className="truncate font-medium text-gray-700">
                                 {item.local_area}, {item.city} ({item.pincode})
                               </span>
                             </div>
@@ -524,7 +578,7 @@ export default function Home() {
         onClose={() => setIsContactModalOpen(false)}
       />
 
-      {/* Product Details Modal with onRefresh */}
+      {/* Product Details Modal */}
       <ProductDetailsModal
         item={selectedProduct}
         isOpen={isDetailsModalOpen}
