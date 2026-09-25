@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '../supabase';
-import { X, Phone, MapPin, Tag, User, FileText, CheckCircle2, Trash2 } from 'lucide-react';
+import { X, Phone, MapPin, Tag, User, FileText, CheckCircle2, Trash2, MessageCircle } from 'lucide-react';
 
 interface ProductDetailsModalProps {
   item: any | null;
@@ -45,7 +45,6 @@ export default function ProductDetailsModal({ item, isOpen, onClose, onRefresh }
     try {
       setActionLoading(true);
 
-      // Optionally delete image from storage if stored in bucket
       if (item.images?.[0]) {
         const urlParts = item.images[0].split('/');
         const fileName = urlParts[urlParts.length - 1];
@@ -72,6 +71,14 @@ export default function ProductDetailsModal({ item, isOpen, onClose, onRefresh }
   }
 
   const isSold = item.status === 'sold';
+
+  // Format phone number to international 91 standard for WhatsApp URL
+  const cleanPhone = item.seller_phone ? item.seller_phone.replace(/\D/g, '') : '';
+  const formattedWhatsappPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+  const whatsappMessage = encodeURIComponent(
+    `Hi, I saw your listing for "${item.title}" on BuyerStuff.com. Is it still available?`
+  );
+  const whatsappUrl = `https://wa.me/${formattedWhatsappPhone}?text=${whatsappMessage}`;
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -147,22 +154,34 @@ export default function ProductDetailsModal({ item, isOpen, onClose, onRefresh }
               </div>
             </div>
 
-            {/* Buyer Action Button */}
+            {/* Buyer Contact Options: WhatsApp & Phone Call */}
             {!isSold ? (
-              <a
-                href={`tel:${item.seller_phone}`}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center shadow-md text-base"
-              >
-                <Phone className="w-5 h-5 mr-2" />
-                Call Seller ({item.seller_phone})
-              </a>
+              <div className="space-y-2">
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center shadow-md text-base"
+                >
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Chat on WhatsApp
+                </a>
+
+                <a
+                  href={`tel:${item.seller_phone}`}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center shadow-sm text-sm"
+                >
+                  <Phone className="w-4 h-4 mr-2" />
+                  Call Seller ({item.seller_phone})
+                </a>
+              </div>
             ) : (
               <div className="w-full bg-gray-200 text-gray-600 font-bold py-3 rounded-xl text-center cursor-not-allowed">
                 Item Sold Out
               </div>
             )}
 
-            {/* Seller Management Controls */}
+            {/* Seller Management Options */}
             <div className="pt-3 border-t border-gray-100 space-y-2">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seller Options</p>
               <div className="grid grid-cols-2 gap-2">
