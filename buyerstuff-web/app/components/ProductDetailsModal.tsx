@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '../supabase';
-import { X, Phone, MapPin, Tag, User, FileText, CheckCircle2, Trash2, MessageCircle, ShieldAlert } from 'lucide-react';
+import { X, Phone, MapPin, Tag, User, FileText, CheckCircle2, Trash2, MessageCircle, Lock } from 'lucide-react';
 
 interface ProductDetailsModalProps {
   item: any | null;
@@ -10,6 +10,7 @@ interface ProductDetailsModalProps {
   currentUser: any | null;
   onClose: () => void;
   onRefresh: () => void;
+  onRequireBuyerAuth: () => void;
 }
 
 export default function ProductDetailsModal({
@@ -18,6 +19,7 @@ export default function ProductDetailsModal({
   currentUser,
   onClose,
   onRefresh,
+  onRequireBuyerAuth,
 }: ProductDetailsModalProps) {
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -25,6 +27,7 @@ export default function ProductDetailsModal({
 
   const isOwner = currentUser && currentUser.id === item.user_id;
   const isSold = item.status === 'sold';
+  const isLoggedInBuyer = !!currentUser;
 
   async function handleMarkAsSold() {
     if (!confirm('Are you sure you want to mark this item as SOLD?')) return;
@@ -137,10 +140,6 @@ export default function ProductDetailsModal({
                 <Tag className="w-4 h-4 text-gray-400 shrink-0" />
                 <span><strong>Product Age:</strong> {item.product_age}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-gray-400 shrink-0" />
-                <span><strong>Seller:</strong> {item.seller_name || 'Verified Seller'}</span>
-              </div>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
                 <span>
@@ -149,36 +148,54 @@ export default function ProductDetailsModal({
               </div>
             </div>
 
-            {!isSold ? (
-              <div className="space-y-2">
+            {/* Buyer Access Control */}
+            {isSold ? (
+              <div className="w-full bg-gray-200 text-gray-600 font-bold py-3 rounded-xl text-center cursor-not-allowed text-sm">
+                Item Sold Out
+              </div>
+            ) : isLoggedInBuyer ? (
+              <div className="space-y-2 bg-green-50 p-3 rounded-xl border border-green-200">
+                <p className="text-xs font-bold text-green-900 flex items-center gap-1">
+                  <User className="w-3.5 h-3.5 text-green-700" /> Seller Information Unlocked
+                </p>
+                <p className="text-xs text-gray-700"><strong>Seller Name:</strong> {item.seller_name || 'Verified Seller'}</p>
+
                 <a
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center shadow-md text-base"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center shadow-md text-xs"
                 >
-                  <MessageCircle className="w-5 h-5 mr-2" />
+                  <MessageCircle className="w-4 h-4 mr-2" />
                   Chat on WhatsApp
                 </a>
 
                 <a
                   href={`tel:${item.seller_phone}`}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center shadow-sm text-sm"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl transition flex items-center justify-center shadow-sm text-xs"
                 >
                   <Phone className="w-4 h-4 mr-2" />
                   Call Seller ({item.seller_phone})
                 </a>
               </div>
             ) : (
-              <div className="w-full bg-gray-200 text-gray-600 font-bold py-3 rounded-xl text-center cursor-not-allowed">
-                Item Sold Out
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-center space-y-2">
+                <Lock className="w-6 h-6 text-amber-600 mx-auto" />
+                <p className="text-xs font-bold text-amber-900">Seller Contact Protected</p>
+                <p className="text-[11px] text-amber-700">Create a Buyer account or log in to view seller contact details & buy.</p>
+                <button
+                  onClick={onRequireBuyerAuth}
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
+                >
+                  Login as Buyer to View Contact & Buy
+                </button>
               </div>
             )}
 
-            {/* Seller Controls (Only Visible to Listing Owner) */}
-            {isOwner ? (
+            {/* Seller Controls */}
+            {isOwner && (
               <div className="pt-3 border-t border-gray-100 space-y-2">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seller Options (You Own This Listing)</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seller Actions</p>
                 <div className="grid grid-cols-2 gap-2">
                   {!isSold && (
                     <button
@@ -203,7 +220,7 @@ export default function ProductDetailsModal({
                   </button>
                 </div>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       </div>

@@ -25,10 +25,11 @@ import {
   User,
   LogOut,
   PackageCheck,
+  ShoppingBag,
 } from 'lucide-react';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'buyer' | 'seller' | 'my-catalog'>('buyer');
+  const [activeTab, setActiveTab] = useState<'buyer' | 'seller-dashboard'>('buyer');
   const [listings, setListings] = useState<any[]>([]);
   const [myListings, setMyListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,14 +38,16 @@ export default function Home() {
   const [selectedCountry, setSelectedCountry] = useState<string>('All Countries');
   const [wishlist, setWishlist] = useState<string[]>([]);
 
-  // User & Modal States
+  // User & Auth States
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<'buyer' | 'seller' | null>(null);
+  const [authRoleTarget, setAuthRoleTarget] = useState<'buyer' | 'seller'>('buyer');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-  // Form State for Sellers
+  // Seller Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -96,9 +99,17 @@ export default function Home() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       setUser(session.user);
-      fetchUserListings(session.user.id);
+      const role = session.user.user_metadata?.user_role || 'buyer';
+      setUserRole(role);
+      setSellerName(session.user.user_metadata?.full_name || '');
+      setSellerPhone(session.user.user_metadata?.mobile_number || '');
+
+      if (role === 'seller') {
+        fetchUserListings(session.user.id);
+      }
     } else {
       setUser(null);
+      setUserRole(null);
       setMyListings([]);
     }
   }
@@ -122,6 +133,7 @@ export default function Home() {
   async function handleSignOut() {
     await supabase.auth.signOut();
     setUser(null);
+    setUserRole(null);
     setMyListings([]);
     setActiveTab('buyer');
   }
@@ -137,11 +149,16 @@ export default function Home() {
     setIsDetailsModalOpen(true);
   }
 
+  function openAuth(targetRole: 'buyer' | 'seller') {
+    setAuthRoleTarget(targetRole);
+    setIsAuthModalOpen(true);
+  }
+
   async function handleCreateListing(e: React.FormEvent) {
     e.preventDefault();
 
     if (!user) {
-      setIsAuthModalOpen(true);
+      openAuth('seller');
       return;
     }
 
@@ -172,8 +189,8 @@ export default function Home() {
           price: parseFloat(price),
           product_age: productAge,
           images: [publicUrlData.publicUrl],
-          seller_name: sellerName,
-          seller_phone: sellerPhone,
+          seller_name: sellerName || user.user_metadata?.full_name,
+          seller_phone: sellerPhone || user.user_metadata?.mobile_number,
           country,
           state,
           city,
@@ -186,14 +203,13 @@ export default function Home() {
 
       if (insertError) throw insertError;
 
-      alert('Product published to catalog successfully!');
+      alert('Product published successfully!');
       setTitle('');
       setDescription('');
       setPrice('');
       setProductAge('');
       setImageFile(null);
       fetchUserListings(user.id);
-      setActiveTab('my-catalog');
       fetchListings();
     } catch (err: any) {
       alert(`Error: ${err.message}`);
@@ -257,6 +273,7 @@ export default function Home() {
             <ChevronDown className="w-3.5 h-3.5 text-blue-200 absolute right-2 pointer-events-none" />
           </div>
 
+          {/* Nav Items */}
           <div className="flex items-center space-x-2 shrink-0">
             <button
               onClick={() => setActiveTab('buyer')}
@@ -267,30 +284,24 @@ export default function Home() {
               Browse
             </button>
 
-            <button
-              onClick={() => {
-                if (!user) setIsAuthModalOpen(true);
-                else setActiveTab('seller');
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center ${
-                activeTab === 'seller' ? 'bg-yellow-400 text-gray-900 shadow-sm' : 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
-              }`}
-            >
-              <Upload className="w-3.5 h-3.5 mr-1" />
-              Sell Item
-            </button>
-
             {user ? (
               <div className="flex items-center space-x-2 border-l border-blue-500 pl-2">
-                <button
-                  onClick={() => setActiveTab('my-catalog')}
-                  className={`px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold flex items-center ${
-                    activeTab === 'my-catalog' ? 'bg-white text-blue-600 shadow-sm' : 'bg-blue-700 hover:bg-blue-800'
-                  }`}
-                >
-                  <PackageCheck className="w-3.5 h-3.5 mr-1" />
-                  My Catalog ({myListings.length})
-                </button>
+                {userRole === 'seller' && (
+                  <button
+                    onClick={() => setActiveTab('seller-dashboard')}
+                    className={`px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold flex items-center ${
+                      activeTab === 'seller-dashboard' ? 'bg-yellow-400 text-gray-900 shadow-sm' : 'bg-blue-700 hover:bg-blue-800'
+                    }`}
+                  >
+                    <PackageCheck className="w-3.5 h-3.5 mr-1" />
+                    Seller Dashboard ({myListings.length})
+                  </button>
+                )}
+
+                <span className="text-xs bg-blue-700 px-2.5 py-1 rounded-xl hidden md:inline-block font-medium">
+                  {user.user_metadata?.full_name || user.email}
+                </span>
+
                 <button
                   onClick={handleSignOut}
                   title="Sign Out"
@@ -300,13 +311,23 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="bg-white/20 hover:bg-white/30 text-white font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition flex items-center"
-              >
-                <User className="w-3.5 h-3.5 mr-1" />
-                Seller Login
-              </button>
+              <div className="flex items-center space-x-1.5">
+                <button
+                  onClick={() => openAuth('buyer')}
+                  className="bg-white/20 hover:bg-white/30 text-white font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition flex items-center"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5 mr-1" />
+                  Buyer Login
+                </button>
+
+                <button
+                  onClick={() => openAuth('seller')}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition flex items-center shadow-sm"
+                >
+                  <User className="w-3.5 h-3.5 mr-1" />
+                  Seller Login
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -325,7 +346,7 @@ export default function Home() {
                   Buy & Sell Great Items in {selectedCountry}
                 </h2>
                 <p className="text-blue-100 text-xs md:text-sm max-w-2xl mx-auto">
-                  Discover deals on electronics, vehicles, furniture, and more. Direct contacts, zero listing fees.
+                  Browse deals on electronics, vehicles, furniture, and more. Log in as a buyer to contact sellers directly.
                 </p>
 
                 <div className="max-w-2xl mx-auto pt-2">
@@ -466,233 +487,202 @@ export default function Home() {
           </>
         )}
 
-        {/* MY CATALOG DASHBOARD */}
-        {activeTab === 'my-catalog' && user && (
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        {/* SELLER DASHBOARD & PUBLISH FORM */}
+        {activeTab === 'seller-dashboard' && user && userRole === 'seller' && (
+          <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Seller Dashboard & Catalog</h2>
-                <p className="text-sm text-gray-500">Logged in email: <strong className="text-gray-800">{user.email}</strong></p>
+                <h2 className="text-2xl font-bold text-gray-900">Seller Dashboard</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Name: <strong>{user.user_metadata?.full_name}</strong> | Email: <strong>{user.email}</strong> | Phone: <strong>{user.user_metadata?.mobile_number}</strong>
+                </p>
               </div>
-              <button
-                onClick={() => setActiveTab('seller')}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center transition shadow-sm"
-              >
-                <Upload className="w-4 h-4 mr-2" /> Add New Item to Catalog
-              </button>
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Published Catalog ({myListings.length})</h3>
-
-            {myListings.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border p-6">
-                <PackageCheck className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">You haven't added any items to your seller catalog yet.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {myListings.map((item) => (
-                  <div key={item.id} className="bg-white rounded-2xl border p-4 shadow-sm flex space-x-4 items-center">
-                    <img src={item.images?.[0]} alt={item.title} className="w-20 h-20 object-cover rounded-xl shrink-0" />
-                    <div className="flex-grow min-w-0">
-                      <h4 className="font-bold text-gray-900 truncate">{item.title}</h4>
-                      <p className="text-blue-600 font-black mt-0.5">₹{item.price?.toLocaleString('en-IN')}</p>
-                      <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        item.status === 'sold' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                      }`}>
-                        {item.status === 'sold' ? 'SOLD' : 'ACTIVE'}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => openProductDetails(item)}
-                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition shrink-0"
-                    >
-                      Manage
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* SELLER FORM */}
-        {activeTab === 'seller' && (
-          <div className="max-w-2xl mx-auto px-4 py-8">
+            {/* List New Item Form */}
             <div className="bg-white p-8 rounded-2xl shadow-md border">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">List Your Item for Sale</h2>
+              <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Upload className="w-5 h-5 text-blue-600" /> Publish New Item to Catalog
+              </h3>
+
               <form onSubmit={handleCreateListing} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Title</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Product Title</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. iPhone 13 128GB or Vintage Watch"
+                    placeholder="e.g. iPhone 13 128GB or Leather Sofa"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Price (₹)</label>
                     <input
                       type="number"
                       required
                       placeholder="e.g. 35000"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
-                      className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Age</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Product Age</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. 6 Months old"
                       value={productAge}
                       onChange={(e) => setProductAge(e.target.value)}
-                      className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Photo</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Product Photo</label>
                   <input
                     type="file"
                     accept="image/*"
                     required
                     onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                    className="w-full p-2.5 border rounded-xl text-gray-600"
+                    className="w-full p-2 border rounded-xl text-gray-600 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
                   <textarea
                     rows={2}
-                    placeholder="Describe condition, working order, original bill..."
+                    placeholder="Describe item condition, working order, original bill..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full p-3 border rounded-xl text-gray-800"
+                    className="w-full p-3 border rounded-xl text-gray-800 text-xs"
                   ></textarea>
                 </div>
 
-                <hr className="my-6" />
-                <h3 className="font-semibold text-gray-800">Seller & Location Details</h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Seller Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Your Name"
-                      value={sellerName}
-                      onChange={(e) => setSellerName(e.target.value)}
-                      className="w-full p-3 border rounded-xl text-gray-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Contact (With Country Code)</label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="+91 9876543210"
-                      value={sellerPhone}
-                      onChange={(e) => setSellerPhone(e.target.value)}
-                      className="w-full p-3 border rounded-xl text-gray-800"
-                    />
-                  </div>
-                </div>
+                <hr className="my-4" />
+                <h4 className="font-semibold text-gray-800 text-sm">Location Info</h4>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Country</label>
                     <select
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
-                      className="w-full p-3 border rounded-xl text-gray-800 bg-white"
+                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs bg-white"
                     >
                       {fullCountryList.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
+                        <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State / Province</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">State</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Uttar Pradesh"
+                      placeholder="State / Region"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
-                      className="w-full p-3 border rounded-xl text-gray-800"
+                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">City</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Ghaziabad"
+                      placeholder="City Name"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      className="w-full p-3 border rounded-xl text-gray-800"
+                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Pincode / Postal Code</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Pincode</label>
                     <input
                       type="text"
                       required
-                      placeholder="201002"
+                      placeholder="Postal Code"
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value)}
-                      className="w-full p-3 border rounded-xl text-gray-800"
+                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Local Area</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Local Area</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Pratap Nagar"
+                      placeholder="Area / Suburb"
                       value={localArea}
                       onChange={(e) => setLocalArea(e.target.value)}
-                      className="w-full p-3 border rounded-xl text-gray-800"
+                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Full Address</label>
                   <textarea
                     required
                     rows={2}
                     placeholder="House No, Street Name"
                     value={fullAddress}
                     onChange={(e) => setFullAddress(e.target.value)}
-                    className="w-full p-3 border rounded-xl text-gray-800"
+                    className="w-full p-2.5 border rounded-xl text-gray-800 text-xs"
                   ></textarea>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow transition"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow transition text-xs"
                 >
                   {loading ? 'Publishing...' : 'Publish Listing'}
                 </button>
               </form>
+            </div>
+
+            {/* My Active Listings List */}
+            <div>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Your Active Catalog ({myListings.length})</h3>
+              {myListings.length === 0 ? (
+                <div className="text-center py-10 bg-white rounded-2xl border text-xs text-gray-500">
+                  No products published yet. Use the form above to add your first item!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {myListings.map((item) => (
+                    <div key={item.id} className="bg-white rounded-2xl border p-4 shadow-sm flex space-x-4 items-center">
+                      <img src={item.images?.[0]} alt={item.title} className="w-16 h-16 object-cover rounded-xl shrink-0" />
+                      <div className="flex-grow min-w-0">
+                        <h4 className="font-bold text-gray-900 text-sm truncate">{item.title}</h4>
+                        <p className="text-blue-600 font-extrabold text-xs">₹{item.price?.toLocaleString('en-IN')}</p>
+                        <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          item.status === 'sold' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {item.status === 'sold' ? 'SOLD' : 'ACTIVE'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => openProductDetails(item)}
+                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition shrink-0"
+                      >
+                        Manage
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -700,6 +690,7 @@ export default function Home() {
 
       <AuthModal
         isOpen={isAuthModalOpen}
+        role={authRoleTarget}
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={checkUserSession}
       />
@@ -715,6 +706,10 @@ export default function Home() {
         currentUser={user}
         onClose={() => setIsDetailsModalOpen(false)}
         onRefresh={fetchListings}
+        onRequireBuyerAuth={() => {
+          setIsDetailsModalOpen(false);
+          openAuth('buyer');
+        }}
       />
 
       <footer className="bg-gray-900 text-gray-300 py-8 border-t mt-auto">
