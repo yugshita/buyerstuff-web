@@ -20,6 +20,7 @@ import {
   Grid,
   Eye,
   ChevronDown,
+  Globe,
 } from 'lucide-react';
 
 export default function Home() {
@@ -28,7 +29,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedCity, setSelectedCity] = useState<string>('All India');
+  const [selectedCountry, setSelectedCountry] = useState<string>('All Countries');
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
@@ -43,7 +44,7 @@ export default function Home() {
   const [productAge, setProductAge] = useState('');
   const [sellerName, setSellerName] = useState('');
   const [sellerPhone, setSellerPhone] = useState('');
-  const [country] = useState('India');
+  const [country, setCountry] = useState('India');
   const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
@@ -51,18 +52,43 @@ export default function Home() {
   const [fullAddress, setFullAddress] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // Major Cities List for Dropdown Selector
-  const majorCities = [
-    'All India',
-    'Delhi NCR',
-    'Ghaziabad',
-    'Noida',
-    'Mumbai',
-    'Bengaluru',
-    'Hyderabad',
-    'Kolkata',
-    'Chennai',
-    'Pune',
+  // Major World Countries List for Filtering & Listing
+  const majorCountries = [
+    'All Countries',
+    'India',
+    'United States',
+    'United Kingdom',
+    'Canada',
+    'Australia',
+    'United Arab Emirates',
+    'Germany',
+    'France',
+    'Singapore',
+    'Japan',
+  ];
+
+  const fullCountryList = [
+    'India',
+    'United States',
+    'United Kingdom',
+    'Canada',
+    'Australia',
+    'United Arab Emirates',
+    'Germany',
+    'France',
+    'Singapore',
+    'Japan',
+    'Saudi Arabia',
+    'Qatar',
+    'Malaysia',
+    'Netherlands',
+    'Italy',
+    'Spain',
+    'Brazil',
+    'Mexico',
+    'South Africa',
+    'New Zealand',
+    'Other',
   ];
 
   useEffect(() => {
@@ -161,11 +187,12 @@ export default function Home() {
     { name: 'Books', icon: BookOpen },
   ];
 
-  // Combined Filter Logic: Search + Category + City
+  // Combined Filter Logic: Search + Category + Country
   const filteredListings = listings.filter((item) => {
     const matchesSearch =
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.country?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.local_area?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesCategory =
@@ -173,15 +200,11 @@ export default function Home() {
       item.title?.toLowerCase().includes(selectedCategory.toLowerCase()) ||
       item.description?.toLowerCase().includes(selectedCategory.toLowerCase());
 
-    const matchesCity =
-      selectedCity === 'All India' ||
-      item.city?.toLowerCase().includes(selectedCity.toLowerCase()) ||
-      (selectedCity === 'Delhi NCR' &&
-        ['delhi', 'noida', 'ghaziabad', 'gurugram', 'faridabad'].some((c) =>
-          item.city?.toLowerCase().includes(c)
-        ));
+    const matchesCountry =
+      selectedCountry === 'All Countries' ||
+      item.country?.toLowerCase().includes(selectedCountry.toLowerCase());
 
-    return matchesSearch && matchesCategory && matchesCity;
+    return matchesSearch && matchesCategory && matchesCountry;
   });
 
   return (
@@ -197,17 +220,17 @@ export default function Home() {
             </h1>
           </div>
 
-          {/* Quick City Dropdown Selector */}
+          {/* Global Country Filter Dropdown */}
           <div className="relative flex items-center bg-blue-700/80 hover:bg-blue-700 rounded-xl px-3 py-1.5 border border-blue-400/40 text-xs md:text-sm font-semibold cursor-pointer">
-            <MapPin className="w-4 h-4 text-yellow-300 mr-1.5 shrink-0" />
+            <Globe className="w-4 h-4 text-yellow-300 mr-1.5 shrink-0" />
             <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
+              value={selectedCountry}
+              onChange={(e) => setSelectedCountry(e.target.value)}
               className="bg-transparent text-white cursor-pointer focus:outline-none pr-4 font-semibold appearance-none"
             >
-              {majorCities.map((cityName) => (
-                <option key={cityName} value={cityName} className="text-gray-900 bg-white font-medium">
-                  {cityName}
+              {majorCountries.map((countryName) => (
+                <option key={countryName} value={countryName} className="text-gray-900 bg-white font-medium">
+                  {countryName}
                 </option>
               ))}
             </select>
@@ -246,13 +269,13 @@ export default function Home() {
             <section className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white py-10 px-4 shadow-inner">
               <div className="max-w-5xl mx-auto text-center space-y-4">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/30 rounded-full text-xs font-semibold text-yellow-300 border border-blue-400/30">
-                  <Sparkles className="w-3.5 h-3.5" /> Verified Peer-to-Peer Marketplace
+                  <Globe className="w-3.5 h-3.5" /> Worldwide Peer-to-Peer Marketplace
                 </div>
                 <h2 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">
-                  Buy & Sell Great Items in {selectedCity}
+                  Buy & Sell Great Items in {selectedCountry}
                 </h2>
                 <p className="text-blue-100 text-xs md:text-sm max-w-2xl mx-auto">
-                  Discover local deals on electronics, vehicles, furniture, and more. Direct seller contacts, zero listing fees.
+                  Discover local and global deals on electronics, vehicles, furniture, and more. Direct seller contacts, zero listing fees.
                 </p>
 
                 {/* Search Bar */}
@@ -261,7 +284,7 @@ export default function Home() {
                     <Search className="absolute left-4 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder={`Search items in ${selectedCity}...`}
+                      placeholder={`Search items, city, or postal code in ${selectedCountry}...`}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-gray-900 bg-white shadow-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 transition text-sm"
@@ -276,7 +299,7 @@ export default function Home() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-gray-800 text-base">Browse Categories</h3>
                 <span className="text-xs font-medium text-gray-500 bg-gray-200/60 px-2.5 py-1 rounded-full">
-                  Location: <strong className="text-blue-600">{selectedCity}</strong> ({filteredListings.length} items)
+                  Location: <strong className="text-blue-600">{selectedCountry}</strong> ({filteredListings.length} items)
                 </span>
               </div>
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -308,15 +331,15 @@ export default function Home() {
               ) : filteredListings.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-2xl shadow-sm border p-8 max-w-md mx-auto">
                   <Store className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <h4 className="font-bold text-gray-800 text-lg">No Items in {selectedCity}</h4>
+                  <h4 className="font-bold text-gray-800 text-lg">No Items in {selectedCountry}</h4>
                   <p className="text-gray-500 text-sm mt-1">
-                    Try selecting "All India" or change your category filter.
+                    Try selecting "All Countries" or change your category filter.
                   </p>
                   <button
-                    onClick={() => setSelectedCity('All India')}
+                    onClick={() => setSelectedCountry('All Countries')}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition"
                   >
-                    View All India Items
+                    View All Worldwide Items
                   </button>
                 </div>
               ) : (
@@ -364,7 +387,7 @@ export default function Home() {
                         <div className="p-4 flex flex-col flex-grow">
                           <h3 className="font-bold text-gray-900 text-base truncate">{item.title}</h3>
                           <p className="text-2xl font-black text-blue-600 mt-1">
-                            ₹{item.price.toLocaleString('en-IN')}
+                            {item.price ? `${item.price.toLocaleString()}` : 'Contact for Price'}
                           </p>
 
                           <div className="space-y-1 mt-3 text-xs text-gray-500">
@@ -375,7 +398,7 @@ export default function Home() {
                             <div className="flex items-center">
                               <MapPin className="w-3.5 h-3.5 mr-1.5 text-gray-400 shrink-0" />
                               <span className="truncate font-medium text-gray-700">
-                                {item.local_area}, {item.city} ({item.pincode})
+                                {item.city ? `${item.city}, ` : ''}{item.country || 'Global'}
                               </span>
                             </div>
                           </div>
@@ -411,7 +434,7 @@ export default function Home() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. iPhone 13 128GB Blue"
+                    placeholder="e.g. iPhone 13 128GB or Vintage Watch"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500"
@@ -420,11 +443,11 @@ export default function Home() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
                     <input
                       type="number"
                       required
-                      placeholder="35000"
+                      placeholder="e.g. 500"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500"
@@ -458,7 +481,7 @@ export default function Home() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
                   <textarea
                     rows={2}
-                    placeholder="Describe condition, working order, original bill, etc."
+                    placeholder="Describe condition, features, warranty, shipping terms..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full p-3 border rounded-xl text-gray-800"
@@ -481,11 +504,11 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Contact</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Contact (With Country Code)</label>
                     <input
                       type="tel"
                       required
-                      placeholder="+91 9876543210"
+                      placeholder="e.g. +1 5550123 or +91 9876543210"
                       value={sellerPhone}
                       onChange={(e) => setSellerPhone(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
@@ -496,14 +519,24 @@ export default function Home() {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                    <input type="text" disabled value={country} className="w-full p-3 border bg-gray-100 text-gray-600 rounded-xl" />
+                    <select
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="w-full p-3 border rounded-xl text-gray-800 bg-white"
+                    >
+                      {fullCountryList.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">State / Province</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Uttar Pradesh"
+                      placeholder="e.g. California / UP"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
@@ -514,7 +547,7 @@ export default function Home() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Ghaziabad"
+                      placeholder="e.g. London / New York"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
@@ -524,22 +557,22 @@ export default function Home() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">ZIP / Postal Code</label>
                     <input
                       type="text"
                       required
-                      placeholder="201002"
+                      placeholder="e.g. 10001 or 201002"
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Local Area</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Local Area / District</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Pratap Nagar"
+                      placeholder="e.g. Manhattan / Downtown"
                       value={localArea}
                       onChange={(e) => setLocalArea(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800"
@@ -548,11 +581,11 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Address / Location</label>
                   <textarea
                     required
                     rows={2}
-                    placeholder="House No, Street Name"
+                    placeholder="Street, Building / Neighborhood details"
                     value={fullAddress}
                     onChange={(e) => setFullAddress(e.target.value)}
                     className="w-full p-3 border rounded-xl text-gray-800"
@@ -564,7 +597,7 @@ export default function Home() {
                   disabled={loading}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow transition"
                 >
-                  {loading ? 'Publishing...' : 'Publish Listing'}
+                  {loading ? 'Publishing...' : 'Publish Global Listing'}
                 </button>
               </form>
             </div>
