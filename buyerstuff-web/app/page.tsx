@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import ContactModal from './components/ContactModal';
 import {
-  ShoppingCart,
   Upload,
   Store,
   Search,
@@ -18,6 +17,7 @@ import {
   Shirt,
   BookOpen,
   Grid,
+  Phone,
 } from 'lucide-react';
 
 export default function Home() {
@@ -183,11 +183,11 @@ export default function Home() {
       <main className="flex-grow w-full">
         {activeTab === 'buyer' && (
           <>
-            {/* Classy Hero Banner */}
+            {/* Hero Banner */}
             <section className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white py-12 px-4 shadow-inner">
               <div className="max-w-5xl mx-auto text-center space-y-4">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/30 rounded-full text-xs font-semibold text-yellow-300 border border-blue-400/30">
-                  <Sparkles className="w-3.5 h-3.5" /> Verified India Peer-to-Peer Marketplace
+                  <Sparkles className="w-3.5 h-3.5" /> Verified Peer-to-Peer Marketplace
                 </div>
                 <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
                   Buy & Sell Great Items Near You
@@ -196,7 +196,7 @@ export default function Home() {
                   Discover local deals on electronics, vehicles, furniture, and more. Direct seller contacts, zero listing fees.
                 </p>
 
-                {/* Search Bar inside Hero */}
+                {/* Search Bar */}
                 <div className="max-w-2xl mx-auto pt-2">
                   <div className="relative flex items-center">
                     <Search className="absolute left-4 text-gray-400 w-5 h-5" />
@@ -278,9 +278,6 @@ export default function Home() {
                               }`}
                             />
                           </button>
-                          <span className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
-                            Verified Seller
-                          </span>
                         </div>
 
                         {/* Content */}
@@ -301,13 +298,13 @@ export default function Home() {
                             </div>
                           </div>
 
-                          <button
-                            onClick={() => alert(`Initiating Razorpay checkout for ₹${item.price}`)}
+                          <a
+                            href={`tel:${item.seller_phone}`}
                             className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center shadow-sm"
                           >
-                            <ShoppingCart className="w-4 h-4 mr-2" />
-                            Buy Now
-                          </button>
+                            <Phone className="w-4 h-4 mr-2" />
+                            Call Seller ({item.seller_phone || 'Contact'})
+                          </a>
                         </div>
                       </div>
                     );
@@ -318,7 +315,7 @@ export default function Home() {
           </>
         )}
 
-        {/* SELLER FORM (OPEN TO ALL) */}
+        {/* SELLER FORM */}
         {activeTab === 'seller' && (
           <div className="max-w-2xl mx-auto px-4 py-8">
             <div className="bg-white p-8 rounded-2xl shadow-md border">
