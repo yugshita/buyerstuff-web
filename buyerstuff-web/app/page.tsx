@@ -5,6 +5,7 @@ import { supabase } from './supabase';
 import AuthModal from './components/AuthModal';
 import ContactModal from './components/ContactModal';
 import ProductDetailsModal from './components/ProductDetailsModal';
+import PolicyModal from './components/PolicyModal';
 import {
   Upload,
   Store,
@@ -26,6 +27,8 @@ import {
   LogOut,
   PackageCheck,
   ShoppingBag,
+  SlidersHorizontal,
+  ArrowUpDown,
 } from 'lucide-react';
 
 export default function Home() {
@@ -33,9 +36,14 @@ export default function Home() {
   const [listings, setListings] = useState<any[]>([]);
   const [myListings, setMyListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedCountry, setSelectedCountry] = useState<string>('All Countries');
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'newest' | 'low-high' | 'high-low'>('newest');
   const [wishlist, setWishlist] = useState<string[]>([]);
 
   // User & Auth States
@@ -44,6 +52,7 @@ export default function Home() {
   const [authRoleTarget, setAuthRoleTarget] = useState<'buyer' | 'seller'>('buyer');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [policyType, setPolicyType] = useState<'privacy' | 'terms' | 'refund' | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
@@ -227,23 +236,36 @@ export default function Home() {
     { name: 'Books', icon: BookOpen },
   ];
 
-  const filteredListings = listings.filter((item) => {
-    const matchesSearch =
-      item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.country?.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filtering & Sorting Logic
+  const filteredListings = listings
+    .filter((item) => {
+      const matchesSearch =
+        item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.country?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesCategory =
-      selectedCategory === 'All' ||
-      item.title?.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-      item.description?.toLowerCase().includes(selectedCategory.toLowerCase());
+      const matchesCategory =
+        selectedCategory === 'All' ||
+        item.title?.toLowerCase().includes(selectedCategory.toLowerCase()) ||
+        item.description?.toLowerCase().includes(selectedCategory.toLowerCase());
 
-    const matchesCountry =
-      selectedCountry === 'All Countries' ||
-      item.country?.toLowerCase().includes(selectedCountry.toLowerCase());
+      const matchesCountry =
+        selectedCountry === 'All Countries' ||
+        item.country?.toLowerCase().includes(selectedCountry.toLowerCase());
 
-    return matchesSearch && matchesCategory && matchesCountry;
-  });
+      const itemPrice = parseFloat(item.price || '0');
+      const min = minPrice ? parseFloat(minPrice) : 0;
+      const max = maxPrice ? parseFloat(maxPrice) : Infinity;
+
+      const matchesPrice = itemPrice >= min && itemPrice <= max;
+
+      return matchesSearch && matchesCategory && matchesCountry && matchesPrice;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'low-high') return (a.price || 0) - (b.price || 0);
+      if (sortBy === 'high-low') return (b.price || 0) - (a.price || 0);
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -273,7 +295,6 @@ export default function Home() {
             <ChevronDown className="w-3.5 h-3.5 text-blue-200 absolute right-2 pointer-events-none" />
           </div>
 
-          {/* Nav Items */}
           <div className="flex items-center space-x-2 shrink-0">
             <button
               onClick={() => setActiveTab('buyer')}
@@ -333,14 +354,14 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Content */}
       <main className="flex-grow w-full">
         {activeTab === 'buyer' && (
           <>
             <section className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white py-10 px-4 shadow-inner">
               <div className="max-w-5xl mx-auto text-center space-y-4">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/30 rounded-full text-xs font-semibold text-yellow-300 border border-blue-400/30">
-                  <Globe className="w-3.5 h-3.5" /> Worldwide Peer-to-Peer Marketplace
+                  <Sparkles className="w-3.5 h-3.5" /> Worldwide Peer-to-Peer Marketplace
                 </div>
                 <h2 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">
                   Buy & Sell Great Items in {selectedCountry}
@@ -364,7 +385,58 @@ export default function Home() {
               </div>
             </section>
 
+            {/* Filter & Sorting Controls */}
             <section className="max-w-7xl mx-auto px-4 pt-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border shadow-sm mb-4">
+                {/* Price Filter */}
+                <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
+                  <SlidersHorizontal className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>Price Range (₹):</span>
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="w-20 p-1.5 border rounded-lg text-xs"
+                  />
+                  <span>-</span>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="w-20 p-1.5 border rounded-lg text-xs"
+                  />
+                  {(minPrice || maxPrice) && (
+                    <button
+                      onClick={() => {
+                        setMinPrice('');
+                        setMaxPrice('');
+                      }}
+                      className="text-red-500 font-bold hover:underline text-[11px] ml-1"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
+                  <ArrowUpDown className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>Sort By:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="p-1.5 border rounded-lg text-xs bg-white text-gray-800"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="low-high">Price: Low to High</option>
+                    <option value="high-low">Price: High to Low</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Category Filter Pills */}
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-gray-800 text-base">Browse Categories</h3>
                 <span className="text-xs font-medium text-gray-500 bg-gray-200/60 px-2.5 py-1 rounded-full">
@@ -393,20 +465,15 @@ export default function Home() {
               </div>
             </section>
 
+            {/* Product Catalog Grid */}
             <section className="max-w-7xl mx-auto px-4 py-6">
               {loading ? (
                 <div className="text-center py-20 text-gray-500 font-medium">Loading catalog...</div>
               ) : filteredListings.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-2xl shadow-sm border p-8 max-w-md mx-auto">
                   <Store className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <h4 className="font-bold text-gray-800 text-lg">No Items in {selectedCountry}</h4>
-                  <p className="text-gray-500 text-sm mt-1">Try selecting "All Countries".</p>
-                  <button
-                    onClick={() => setSelectedCountry('All Countries')}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition"
-                  >
-                    View All Worldwide Items
-                  </button>
+                  <h4 className="font-bold text-gray-800 text-lg">No Items Found</h4>
+                  <p className="text-gray-500 text-sm mt-1">Try adjusting your filters or price range.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -487,7 +554,7 @@ export default function Home() {
           </>
         )}
 
-        {/* SELLER DASHBOARD & PUBLISH FORM */}
+        {/* SELLER DASHBOARD */}
         {activeTab === 'seller-dashboard' && user && userRole === 'seller' && (
           <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
             <div className="bg-white p-6 rounded-2xl shadow-sm border flex justify-between items-center">
@@ -499,10 +566,9 @@ export default function Home() {
               </div>
             </div>
 
-            {/* List New Item Form */}
             <div className="bg-white p-8 rounded-2xl shadow-md border">
               <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <Upload className="w-5 h-5 text-blue-600" /> Publish New Item to Catalog
+                <Upload className="w-5 h-5 text-blue-600" /> Publish New Item
               </h3>
 
               <form onSubmit={handleCreateListing} className="space-y-4">
@@ -652,7 +718,6 @@ export default function Home() {
               </form>
             </div>
 
-            {/* My Active Listings List */}
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">Your Active Catalog ({myListings.length})</h3>
               {myListings.length === 0 ? (
@@ -700,6 +765,12 @@ export default function Home() {
         onClose={() => setIsContactModalOpen(false)}
       />
 
+      <PolicyModal
+        type={policyType}
+        isOpen={!!policyType}
+        onClose={() => setPolicyType(null)}
+      />
+
       <ProductDetailsModal
         item={selectedProduct}
         isOpen={isDetailsModalOpen}
@@ -712,12 +783,29 @@ export default function Home() {
         }}
       />
 
+      {/* Footer */}
       <footer className="bg-gray-900 text-gray-300 py-8 border-t mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
           <p>© 2026 BuyerStuff.com. All rights reserved.</p>
           <div className="flex space-x-6">
-            <a href="#" className="hover:text-white transition">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition">Terms & Conditions</a>
+            <button
+              onClick={() => setPolicyType('privacy')}
+              className="hover:text-white transition cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            <button
+              onClick={() => setPolicyType('terms')}
+              className="hover:text-white transition cursor-pointer"
+            >
+              Terms & Conditions
+            </button>
+            <button
+              onClick={() => setPolicyType('refund')}
+              className="hover:text-white transition cursor-pointer"
+            >
+              Refund Policy
+            </button>
             <button
               onClick={() => setIsContactModalOpen(true)}
               className="hover:text-white underline cursor-pointer transition"
