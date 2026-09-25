@@ -108,6 +108,7 @@ export default function Home() {
           pincode,
           local_area: localArea,
           full_address: fullAddress,
+          status: 'active',
         },
       ]);
 
@@ -163,7 +164,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setActiveTab('buyer')}>
             <Store className="w-8 h-8 text-yellow-300" />
-            <h1 className="text-2xl font-extrabold tracking-tight">BuyerStuff<span className="text-yellow-300">.com</span></h1>
+            <h1 className="text-2xl font-extrabold tracking-tight">
+              BuyerStuff<span className="text-yellow-300">.com</span>
+            </h1>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -266,25 +269,34 @@ export default function Home() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {filteredListings.map((item) => {
                     const isLiked = wishlist.includes(item.id);
+                    const isSold = item.status === 'sold';
+
                     return (
                       <div
                         key={item.id}
                         onClick={() => openProductDetails(item)}
                         className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col relative group cursor-pointer"
                       >
-                        {/* Image + Wishlist Heart */}
+                        {/* Image + Wishlist Heart + Sold Badge */}
                         <div className="relative aspect-square w-full bg-gray-100 overflow-hidden">
                           <img
                             src={item.images?.[0] || 'https://via.placeholder.com/300'}
                             alt={item.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
+                              isSold ? 'grayscale' : ''
+                            }`}
                           />
+                          {isSold && (
+                            <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider z-10">
+                              SOLD OUT
+                            </span>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleWishlist(item.id);
                             }}
-                            className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-md rounded-full shadow hover:bg-white transition"
+                            className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-md rounded-full shadow hover:bg-white transition z-10"
                           >
                             <Heart
                               className={`w-4 h-4 ${
@@ -297,7 +309,9 @@ export default function Home() {
                         {/* Content */}
                         <div className="p-4 flex flex-col flex-grow">
                           <h3 className="font-bold text-gray-900 text-base truncate">{item.title}</h3>
-                          <p className="text-2xl font-black text-blue-600 mt-1">₹{item.price.toLocaleString('en-IN')}</p>
+                          <p className="text-2xl font-black text-blue-600 mt-1">
+                            ₹{item.price.toLocaleString('en-IN')}
+                          </p>
 
                           <div className="space-y-1 mt-3 text-xs text-gray-500">
                             <div className="flex items-center">
@@ -510,11 +524,12 @@ export default function Home() {
         onClose={() => setIsContactModalOpen(false)}
       />
 
-      {/* Product Details Modal */}
+      {/* Product Details Modal with onRefresh */}
       <ProductDetailsModal
         item={selectedProduct}
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
+        onRefresh={fetchListings}
       />
 
       {/* Footer */}
@@ -536,16 +551,3 @@ export default function Home() {
     </div>
   );
 }
-{/* Product Details Modal with Refresh Prop */}
-<ProductDetailsModal
-  item={selectedProduct}
-  isOpen={isDetailsModalOpen}
-  onClose={() => setIsDetailsModalOpen(false)}
-  onRefresh={fetchListings}
-/>
-{/* Inside the grid mapping in page.tsx */}
-{item.status === 'sold' && (
-  <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider z-10">
-    SOLD OUT
-  </span>
-)}
