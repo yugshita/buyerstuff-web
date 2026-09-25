@@ -29,6 +29,7 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   ArrowUpDown,
+  PlusCircle,
 } from 'lucide-react';
 
 export default function Home() {
@@ -108,7 +109,7 @@ export default function Home() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       setUser(session.user);
-      const role = session.user.user_metadata?.user_role || 'buyer';
+      const role = session.user.user_metadata?.user_role || 'seller';
       setUserRole(role);
       setSellerName(session.user.user_metadata?.full_name || '');
       setSellerPhone(session.user.user_metadata?.mobile_number || '');
@@ -163,6 +164,14 @@ export default function Home() {
     setIsAuthModalOpen(true);
   }
 
+  function handleUploadCatalogClick() {
+    if (!user) {
+      openAuth('seller');
+    } else {
+      setActiveTab('seller-dashboard');
+    }
+  }
+
   async function handleCreateListing(e: React.FormEvent) {
     e.preventDefault();
 
@@ -212,7 +221,7 @@ export default function Home() {
 
       if (insertError) throw insertError;
 
-      alert('Product published successfully!');
+      alert('Item added to catalog successfully!');
       setTitle('');
       setDescription('');
       setPrice('');
@@ -305,23 +314,26 @@ export default function Home() {
               Browse
             </button>
 
+            {/* Direct Upload Catalog Button */}
+            <button
+              onClick={handleUploadCatalogClick}
+              className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition flex items-center shadow-sm"
+            >
+              <PlusCircle className="w-4 h-4 mr-1" />
+              Upload Catalog
+            </button>
+
             {user ? (
               <div className="flex items-center space-x-2 border-l border-blue-500 pl-2">
-                {userRole === 'seller' && (
-                  <button
-                    onClick={() => setActiveTab('seller-dashboard')}
-                    className={`px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold flex items-center ${
-                      activeTab === 'seller-dashboard' ? 'bg-yellow-400 text-gray-900 shadow-sm' : 'bg-blue-700 hover:bg-blue-800'
-                    }`}
-                  >
-                    <PackageCheck className="w-3.5 h-3.5 mr-1" />
-                    Seller Dashboard ({myListings.length})
-                  </button>
-                )}
-
-                <span className="text-xs bg-blue-700 px-2.5 py-1 rounded-xl hidden md:inline-block font-medium">
-                  {user.user_metadata?.full_name || user.email}
-                </span>
+                <button
+                  onClick={() => setActiveTab('seller-dashboard')}
+                  className={`px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold flex items-center ${
+                    activeTab === 'seller-dashboard' ? 'bg-white text-blue-600 shadow-sm' : 'bg-blue-700 hover:bg-blue-800'
+                  }`}
+                >
+                  <PackageCheck className="w-3.5 h-3.5 mr-1" />
+                  My Catalog ({myListings.length})
+                </button>
 
                 <button
                   onClick={handleSignOut}
@@ -343,7 +355,7 @@ export default function Home() {
 
                 <button
                   onClick={() => openAuth('seller')}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition flex items-center shadow-sm"
+                  className="bg-blue-800 hover:bg-blue-900 text-white font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition flex items-center shadow-sm border border-blue-400/30"
                 >
                   <User className="w-3.5 h-3.5 mr-1" />
                   Seller Login
@@ -388,7 +400,6 @@ export default function Home() {
             {/* Filter & Sorting Controls */}
             <section className="max-w-7xl mx-auto px-4 pt-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border shadow-sm mb-4">
-                {/* Price Filter */}
                 <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
                   <SlidersHorizontal className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>Price Range (₹):</span>
@@ -420,7 +431,6 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Sort Dropdown */}
                 <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
                   <ArrowUpDown className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>Sort By:</span>
@@ -554,21 +564,22 @@ export default function Home() {
           </>
         )}
 
-        {/* SELLER DASHBOARD */}
-        {activeTab === 'seller-dashboard' && user && userRole === 'seller' && (
+        {/* SELLER DASHBOARD & PUBLISH FORM */}
+        {activeTab === 'seller-dashboard' && (
           <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
             <div className="bg-white p-6 rounded-2xl shadow-sm border flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Seller Dashboard</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Seller Dashboard & Upload Catalog</h2>
                 <p className="text-xs text-gray-500 mt-1">
-                  Name: <strong>{user.user_metadata?.full_name}</strong> | Email: <strong>{user.email}</strong> | Phone: <strong>{user.user_metadata?.mobile_number}</strong>
+                  Account: <strong>{user?.user_metadata?.full_name || user?.email}</strong> | Mobile: <strong>{user?.user_metadata?.mobile_number || 'N/A'}</strong>
                 </p>
               </div>
             </div>
 
+            {/* Upload Catalog Form */}
             <div className="bg-white p-8 rounded-2xl shadow-md border">
               <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <Upload className="w-5 h-5 text-blue-600" /> Publish New Item
+                <Upload className="w-5 h-5 text-blue-600" /> Upload New Product to Catalog
               </h3>
 
               <form onSubmit={handleCreateListing} className="space-y-4">
@@ -713,16 +724,17 @@ export default function Home() {
                   disabled={loading}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow transition text-xs"
                 >
-                  {loading ? 'Publishing...' : 'Publish Listing'}
+                  {loading ? 'Publishing...' : 'Upload Item to Catalog'}
                 </button>
               </form>
             </div>
 
+            {/* My Active Listings List */}
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">Your Active Catalog ({myListings.length})</h3>
               {myListings.length === 0 ? (
                 <div className="text-center py-10 bg-white rounded-2xl border text-xs text-gray-500">
-                  No products published yet. Use the form above to add your first item!
+                  No products published yet. Use the form above to upload your first item!
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
