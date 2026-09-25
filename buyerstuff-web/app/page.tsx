@@ -2,18 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from './supabase';
-import AuthModal from './components/AuthModal';
 import ContactModal from './components/ContactModal';
 import {
   ShoppingCart,
   Upload,
   Store,
-  User,
   Search,
   MapPin,
   Tag,
-  LogOut,
-  PackageCheck,
   Heart,
   Sparkles,
   Smartphone,
@@ -25,17 +21,12 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'buyer' | 'seller' | 'my-listings'>('buyer');
+  const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
   const [listings, setListings] = useState<any[]>([]);
-  const [myListings, setMyListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [wishlist, setWishlist] = useState<string[]>([]);
-
-  // User State
-  const [user, setUser] = useState<any>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   // Form State for Sellers
@@ -54,42 +45,14 @@ export default function Home() {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
-    checkUserSession();
     fetchListings();
   }, []);
-
-  async function checkUserSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      setUser(session.user);
-      setSellerPhone(session.user.phone || '');
-      fetchUserListings(session.user.id);
-    } else {
-      setUser(null);
-    }
-  }
 
   async function fetchListings() {
     setLoading(true);
     const { data } = await supabase.from('listings').select('*').order('created_at', { ascending: false });
     if (data) setListings(data);
     setLoading(false);
-  }
-
-  async function fetchUserListings(userId: string) {
-    const { data } = await supabase
-      .from('listings')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    if (data) setMyListings(data);
-  }
-
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    setUser(null);
-    setMyListings([]);
-    setActiveTab('buyer');
   }
 
   function toggleWishlist(id: string) {
@@ -100,10 +63,6 @@ export default function Home() {
 
   async function handleCreateListing(e: React.FormEvent) {
     e.preventDefault();
-    if (!user) {
-      setIsAuthModalOpen(true);
-      return;
-    }
 
     if (!imageFile) {
       alert('Please select an image for your product.');
@@ -126,7 +85,6 @@ export default function Home() {
 
       const { error: insertError } = await supabase.from('listings').insert([
         {
-          user_id: user.id,
           title,
           description,
           price: parseFloat(price),
@@ -150,9 +108,15 @@ export default function Home() {
       setDescription('');
       setPrice('');
       setProductAge('');
+      setSellerName('');
+      setSellerPhone('');
+      setState('');
+      setCity('');
+      setPincode('');
+      setLocalArea('');
+      setFullAddress('');
       setImageFile(null);
-      fetchUserListings(user.id);
-      setActiveTab('my-listings');
+      setActiveTab('buyer');
       fetchListings();
     } catch (err: any) {
       alert(`Error: ${err.message}`);
@@ -203,46 +167,14 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => {
-                if (!user) setIsAuthModalOpen(true);
-                else setActiveTab('seller');
-              }}
-              className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition flex items-center ${
-                activeTab === 'seller' ? 'bg-white text-blue-600 shadow-sm' : 'hover:bg-blue-700'
+              onClick={() => setActiveTab('seller')}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center ${
+                activeTab === 'seller' ? 'bg-yellow-400 text-gray-900 shadow-sm' : 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
               }`}
             >
               <Upload className="w-4 h-4 mr-1.5" />
               Sell Item
             </button>
-
-            {user ? (
-              <div className="flex items-center space-x-2 border-l border-blue-500 pl-3">
-                <button
-                  onClick={() => setActiveTab('my-listings')}
-                  className={`px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center ${
-                    activeTab === 'my-listings' ? 'bg-white text-blue-600 shadow-sm' : 'bg-blue-700 hover:bg-blue-800'
-                  }`}
-                >
-                  <PackageCheck className="w-4 h-4 mr-1.5" />
-                  My Listings ({myListings.length})
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  title="Sign Out"
-                  className="p-2 hover:bg-blue-700 rounded-xl text-gray-200 transition"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-xl text-sm shadow transition flex items-center"
-              >
-                <User className="w-4 h-4 mr-1.5" />
-                Login / Signup
-              </button>
-            )}
           </div>
         </div>
       </header>
@@ -386,49 +318,7 @@ export default function Home() {
           </>
         )}
 
-        {/* MY LISTINGS VIEW */}
-        {activeTab === 'my-listings' && user && (
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border mb-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">My Seller Profile</h2>
-                <p className="text-sm text-gray-500">Logged in account: {user.phone}</p>
-              </div>
-              <button
-                onClick={() => setActiveTab('seller')}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm flex items-center transition shadow-sm"
-              >
-                <Upload className="w-4 h-4 mr-2" /> Add New Listing
-              </button>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Your Active Listings ({myListings.length})</h3>
-
-            {myListings.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border">
-                <p className="text-gray-500">You haven't listed any items for sale yet.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {myListings.map((item) => (
-                  <div key={item.id} className="bg-white rounded-2xl border p-4 shadow-sm flex space-x-4">
-                    <img src={item.images?.[0]} alt={item.title} className="w-24 h-24 object-cover rounded-xl shrink-0" />
-                    <div className="flex-grow">
-                      <h4 className="font-bold text-gray-900">{item.title}</h4>
-                      <p className="text-blue-600 font-extrabold mt-0.5">₹{item.price.toLocaleString('en-IN')}</p>
-                      <p className="text-xs text-gray-500 mt-1">{item.local_area}, {item.city}</p>
-                      <span className="inline-block mt-2 px-2.5 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-semibold">
-                        Live on Store
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* SELLER FORM */}
+        {/* SELLER FORM (OPEN TO ALL) */}
         {activeTab === 'seller' && (
           <div className="max-w-2xl mx-auto px-4 py-8">
             <div className="bg-white p-8 rounded-2xl shadow-md border">
@@ -588,13 +478,6 @@ export default function Home() {
           </div>
         )}
       </main>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onAuthSuccess={checkUserSession}
-      />
 
       {/* Contact Modal */}
       <ContactModal
