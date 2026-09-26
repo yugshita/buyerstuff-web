@@ -30,6 +30,9 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   PlusCircle,
+  Home as HomeIcon,
+  Briefcase,
+  Wrench,
 } from 'lucide-react';
 
 export default function Home() {
@@ -60,6 +63,8 @@ export default function Home() {
   // Seller Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('Electronics');
+  const [subCategory, setSubCategory] = useState('Mobile Phones');
   const [price, setPrice] = useState('');
   const [productAge, setProductAge] = useState('');
   const [sellerName, setSellerName] = useState('');
@@ -71,6 +76,18 @@ export default function Home() {
   const [localArea, setLocalArea] = useState('');
   const [fullAddress, setFullAddress] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // Category & Sub-Category Map
+  const categoryMap: { [key: string]: string[] } = {
+    Electronics: ['Mobile Phones', 'Laptops & Computers', 'Audio & Headphones', 'Cameras', 'TV & Home Appliances', 'Gaming Consoles', 'Smartwatches', 'Accessories'],
+    Vehicles: ['Cars', 'Motorcycles & Scooters', 'Bicycles', 'Commercial Vehicles', 'Spare Parts & Accessories'],
+    Furniture: ['Living Room', 'Bedroom & Beds', 'Office Furniture', 'Dining & Kitchen', 'Outdoor Furniture', 'Decor & Lighting'],
+    Fashion: ["Men's Clothing", "Women's Clothing", 'Kids Fashion', 'Footwear', 'Watches & Jewelry', 'Bags & Luggage'],
+    Books: ['Fiction & Novels', 'Textbooks & Education', 'Children Books', 'Comics & Manga', 'Self-Help & Business'],
+    'Real Estate': ['Flats & Apartments', 'Houses & Villas', 'Commercial Properties', 'Land & Plots', 'PG & Guest Houses'],
+    Services: ['Home Cleaning & Repair', 'Tutoring & Classes', 'IT & Web Services', 'Event Management', 'Transport & Drivers'],
+    Jobs: ['Full-Time', 'Part-Time', 'Freelance / Remote', 'Internships'],
+  };
 
   const majorCountries = [
     'All Countries',
@@ -172,6 +189,12 @@ export default function Home() {
     }
   }
 
+  function handleCategoryChange(newCat: string) {
+    setCategory(newCat);
+    const availableSubs = categoryMap[newCat] || [];
+    setSubCategory(availableSubs[0] || 'General');
+  }
+
   async function handleCreateListing(e: React.FormEvent) {
     e.preventDefault();
 
@@ -204,6 +227,8 @@ export default function Home() {
           user_id: user.id,
           title,
           description,
+          category,
+          sub_category: subCategory,
           price: parseFloat(price),
           product_age: productAge,
           images: [publicUrlData.publicUrl],
@@ -221,7 +246,7 @@ export default function Home() {
 
       if (insertError) throw insertError;
 
-      alert('Item added to catalog successfully!');
+      alert('Item published to catalog successfully!');
       setTitle('');
       setDescription('');
       setPrice('');
@@ -236,13 +261,16 @@ export default function Home() {
     }
   }
 
-  const categories = [
+  const categoriesUI = [
     { name: 'All', icon: Grid },
     { name: 'Electronics', icon: Smartphone },
     { name: 'Vehicles', icon: Car },
     { name: 'Furniture', icon: Sofa },
     { name: 'Fashion', icon: Shirt },
     { name: 'Books', icon: BookOpen },
+    { name: 'Real Estate', icon: HomeIcon },
+    { name: 'Services', icon: Wrench },
+    { name: 'Jobs', icon: Briefcase },
   ];
 
   // Filtering & Sorting Logic
@@ -251,12 +279,13 @@ export default function Home() {
       const matchesSearch =
         item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.country?.toLowerCase().includes(searchQuery.toLowerCase());
+        item.country?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.sub_category?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesCategory =
         selectedCategory === 'All' ||
-        item.title?.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-        item.description?.toLowerCase().includes(selectedCategory.toLowerCase());
+        item.category?.toLowerCase() === selectedCategory.toLowerCase() ||
+        item.title?.toLowerCase().includes(selectedCategory.toLowerCase());
 
       const matchesCountry =
         selectedCountry === 'All Countries' ||
@@ -314,7 +343,6 @@ export default function Home() {
               Browse
             </button>
 
-            {/* Direct Upload Catalog Button */}
             <button
               onClick={handleUploadCatalogClick}
               className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 py-1.5 rounded-xl text-xs md:text-sm transition flex items-center shadow-sm"
@@ -387,7 +415,7 @@ export default function Home() {
                     <Search className="absolute left-4 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder={`Search items in ${selectedCountry}...`}
+                      placeholder={`Search items or sub-categories in ${selectedCountry}...`}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-gray-900 bg-white shadow-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 transition text-sm"
@@ -454,7 +482,7 @@ export default function Home() {
                 </span>
               </div>
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                {categories.map((cat) => {
+                {categoriesUI.map((cat) => {
                   const Icon = cat.icon;
                   const isSelected = selectedCategory === cat.name;
                   return (
@@ -483,7 +511,7 @@ export default function Home() {
                 <div className="text-center py-16 bg-white rounded-2xl shadow-sm border p-8 max-w-md mx-auto">
                   <Store className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <h4 className="font-bold text-gray-800 text-lg">No Items Found</h4>
-                  <p className="text-gray-500 text-sm mt-1">Try adjusting your filters or price range.</p>
+                  <p className="text-gray-500 text-sm mt-1">Try adjusting your category or price filters.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -526,6 +554,17 @@ export default function Home() {
                         </div>
 
                         <div className="p-4 flex flex-col flex-grow">
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-wider truncate">
+                              {item.category || 'General'}
+                            </span>
+                            {item.sub_category && (
+                              <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md truncate">
+                                {item.sub_category}
+                              </span>
+                            )}
+                          </div>
+
                           <h3 className="font-bold text-gray-900 text-base truncate">{item.title}</h3>
                           <p className="text-2xl font-black text-blue-600 mt-1">
                             {item.price ? `₹${item.price.toLocaleString('en-IN')}` : 'Contact for Price'}
@@ -593,6 +632,39 @@ export default function Home() {
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs"
                   />
+                </div>
+
+                {/* Category & Sub-Category Selection */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 mb-1">Main Category</label>
+                    <select
+                      value={category}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
+                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs bg-white font-semibold focus:ring-2 focus:ring-blue-500"
+                    >
+                      {Object.keys(categoryMap).map((catName) => (
+                        <option key={catName} value={catName}>
+                          {catName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 mb-1">Sub-Category</label>
+                    <select
+                      value={subCategory}
+                      onChange={(e) => setSubCategory(e.target.value)}
+                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs bg-white font-semibold focus:ring-2 focus:ring-blue-500"
+                    >
+                      {(categoryMap[category] || []).map((subName) => (
+                        <option key={subName} value={subName}>
+                          {subName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -742,13 +814,13 @@ export default function Home() {
                     <div key={item.id} className="bg-white rounded-2xl border p-4 shadow-sm flex space-x-4 items-center">
                       <img src={item.images?.[0]} alt={item.title} className="w-16 h-16 object-cover rounded-xl shrink-0" />
                       <div className="flex-grow min-w-0">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                            {item.category || 'Electronics'}
+                          </span>
+                        </div>
                         <h4 className="font-bold text-gray-900 text-sm truncate">{item.title}</h4>
                         <p className="text-blue-600 font-extrabold text-xs">₹{item.price?.toLocaleString('en-IN')}</p>
-                        <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          item.status === 'sold' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                        }`}>
-                          {item.status === 'sold' ? 'SOLD' : 'ACTIVE'}
-                        </span>
                       </div>
                       <button
                         onClick={() => openProductDetails(item)}
