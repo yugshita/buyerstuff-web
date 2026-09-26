@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '../supabase';
-import { X, Phone, MapPin, Tag, User, FileText, CheckCircle2, Trash2, MessageCircle, Lock } from 'lucide-react';
+import { X, Phone, MapPin, Tag, User, FileText, CheckCircle2, Trash2, MessageCircle, Lock, ShoppingCart } from 'lucide-react';
 
 interface ProductDetailsModalProps {
   item: any | null;
@@ -22,12 +22,72 @@ export default function ProductDetailsModal({
   onRequireBuyerAuth,
 }: ProductDetailsModalProps) {
   const [actionLoading, setActionLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   if (!isOpen || !item) return null;
 
   const isOwner = currentUser && currentUser.id === item.user_id;
   const isSold = item.status === 'sold';
   const isLoggedInBuyer = !!currentUser;
+
+  async function handleBuyNow() {
+    try {
+      setPaymentLoading(true);
+
+      // Create Order via Server Route
+      const res = await fetch('/api/razorpay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: item.price,
+          receipt: `order_${item.id}_${Date.now()}`,
+        }),
+      });
+
+      const orderData = await res.json();
+
+      if (!res.ok || orderData.error) {
+        throw new Error(orderData.error || 'Failed to initialize payment.');
+      }
+
+      // Trigger Razorpay Checkout Modal
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'BuyerStuff.com',
+        description: `Payment for ${item.title}`,
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
+          
+          // Automatically mark item as sold after payment success
+          await supabase
+            .from('listings')
+            .update({ status: 'sold' })
+            .eq('id', item.id);
+
+          onRefresh();
+          onClose();
+        },
+        prefill: {
+          name: currentUser?.user_metadata?.full_name || '',
+          email: currentUser?.email || '',
+          contact: currentUser?.user_metadata?.mobile_number || '',
+        },
+        theme: {
+          color: '#2563eb',
+        },
+      };
+
+      const razorpay = new (window as any).Razorpay(options);
+      razorpay.open();
+    } catch (err: any) {
+      alert(`Payment Error: ${err.message}`);
+    } finally {
+      setPaymentLoading(false);
+    }
+  }
 
   async function handleMarkAsSold() {
     if (!confirm('Are you sure you want to mark this item as SOLD?')) return;
@@ -148,7 +208,7 @@ export default function ProductDetailsModal({
               </div>
             </div>
 
-            {/* Buyer Access Control */}
+            {/* Buyer Access Controls */}
             {isSold ? (
               <div className="w-full bg-gray-200 text-gray-600 font-bold py-3 rounded-xl text-center cursor-not-allowed text-sm">
                 Item Sold Out
@@ -156,9 +216,19 @@ export default function ProductDetailsModal({
             ) : isLoggedInBuyer ? (
               <div className="space-y-2 bg-green-50 p-3 rounded-xl border border-green-200">
                 <p className="text-xs font-bold text-green-900 flex items-center gap-1">
-                  <User className="w-3.5 h-3.5 text-green-700" /> Seller Information Unlocked
+                  <User className="w-3.5 h-3.5 text-green-700" /> Seller Info & Purchase Unlocked
                 </p>
                 <p className="text-xs text-gray-700"><strong>Seller Name:</strong> {item.seller_name || 'Verified Seller'}</p>
+
+                {/* Buy Now / Pay Online Button */}
+                <button
+                  onClick={handleBuyNow}
+                  disabled={paymentLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center shadow-md text-sm"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  {paymentLoading ? 'Preparing Payment...' : `Buy Now for ₹${item.price?.toLocaleString('en-IN')}`}
+                </button>
 
                 <a
                   href={whatsappUrl}
@@ -172,7 +242,7 @@ export default function ProductDetailsModal({
 
                 <a
                   href={`tel:${item.seller_phone}`}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl transition flex items-center justify-center shadow-sm text-xs"
+                  className="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 rounded-xl transition flex items-center justify-center shadow-sm text-xs"
                 >
                   <Phone className="w-4 h-4 mr-2" />
                   Call Seller ({item.seller_phone})
@@ -182,7 +252,7 @@ export default function ProductDetailsModal({
               <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-center space-y-2">
                 <Lock className="w-6 h-6 text-amber-600 mx-auto" />
                 <p className="text-xs font-bold text-amber-900">Seller Contact Protected</p>
-                <p className="text-[11px] text-amber-700">Create a Buyer account or log in to view seller contact details & buy.</p>
+                <p className="text-[11px] text-amber-700">Create a Buyer account or log in to view seller contact details & pay online.</p>
                 <button
                   onClick={onRequireBuyerAuth}
                   className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
