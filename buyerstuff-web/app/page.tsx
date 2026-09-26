@@ -33,6 +33,7 @@ import {
   Home as HomeIcon,
   Briefcase,
   Wrench,
+  Sparkle,
 } from 'lucide-react';
 
 export default function Home() {
@@ -63,8 +64,8 @@ export default function Home() {
   // Seller Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Electronics');
-  const [subCategory, setSubCategory] = useState('Mobile Phones');
+  const [category, setCategory] = useState('Household');
+  const [subCategory, setSubCategory] = useState('Bedsheets & Blankets');
   const [price, setPrice] = useState('');
   const [productAge, setProductAge] = useState('');
   const [sellerName, setSellerName] = useState('');
@@ -77,15 +78,84 @@ export default function Home() {
   const [fullAddress, setFullAddress] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // Category & Sub-Category Map
+  // Amazon / Flipkart / OLX / Meesho Master Category Map
   const categoryMap: { [key: string]: string[] } = {
-    Electronics: ['Mobile Phones', 'Laptops & Computers', 'Audio & Headphones', 'Cameras', 'TV & Home Appliances', 'Gaming Consoles', 'Smartwatches', 'Accessories'],
-    Vehicles: ['Cars', 'Motorcycles & Scooters', 'Bicycles', 'Commercial Vehicles', 'Spare Parts & Accessories'],
-    Furniture: ['Living Room', 'Bedroom & Beds', 'Office Furniture', 'Dining & Kitchen', 'Outdoor Furniture', 'Decor & Lighting'],
-    Fashion: ["Men's Clothing", "Women's Clothing", 'Kids Fashion', 'Footwear', 'Watches & Jewelry', 'Bags & Luggage'],
-    Books: ['Fiction & Novels', 'Textbooks & Education', 'Children Books', 'Comics & Manga', 'Self-Help & Business'],
-    'Real Estate': ['Flats & Apartments', 'Houses & Villas', 'Commercial Properties', 'Land & Plots', 'PG & Guest Houses'],
-    Services: ['Home Cleaning & Repair', 'Tutoring & Classes', 'IT & Web Services', 'Event Management', 'Transport & Drivers'],
+    Household: [
+      'Bedsheets & Blankets',
+      'Pillows & Covers',
+      'Curtains & Blinds',
+      'Towels & Bath Linens',
+      'Kitchenware & Cookware',
+      'Utensils & Cutlery',
+      'Home Decor & Crafts',
+      'Cleaning & Storage',
+      'Tableware & Dinner Sets',
+    ],
+    Electronics: [
+      'Mobile Phones',
+      'Laptops & Computers',
+      'Audio & Headphones',
+      'Cameras',
+      'TV & Home Appliances',
+      'Smartwatches',
+      'Gaming Consoles',
+      'Accessories & Cables',
+    ],
+    Vehicles: [
+      'Cars',
+      'Motorcycles & Scooters',
+      'Bicycles',
+      'Commercial Vehicles',
+      'Spare Parts & Accessories',
+    ],
+    Furniture: [
+      'Beds & Mattresses',
+      'Sofa & Seating',
+      'Living Room Tables',
+      'Office & Study Desks',
+      'Dining Tables',
+      'Wardrobes & Cabinets',
+      'Outdoor Furniture',
+    ],
+    Fashion: [
+      "Men's Wear",
+      "Women's Ethnic & Western",
+      'Kids Wear',
+      'Footwear',
+      'Watches & Jewelry',
+      'Bags & Luggage',
+      'Fashion Accessories',
+    ],
+    'Beauty & Care': [
+      'Skincare',
+      'Makeup & Cosmetics',
+      'Haircare',
+      'Fragrances & Perfumes',
+      'Grooming & Shaving',
+      'Bath & Body',
+    ],
+    'Books & Sports': [
+      'Novels & Literature',
+      'Textbooks & Education',
+      'Fitness & Gym Equipment',
+      'Outdoor Sports',
+      'Musical Instruments',
+      'Toys & Games',
+    ],
+    'Real Estate': [
+      'Flats & Apartments',
+      'Houses & Villas',
+      'Commercial Properties',
+      'Land & Plots',
+      'PG & Rental Rooms',
+    ],
+    Services: [
+      'Home Cleaning & Repair',
+      'Tutoring & Classes',
+      'IT & Web Services',
+      'Event Management',
+      'Packers & Movers',
+    ],
     Jobs: ['Full-Time', 'Part-Time', 'Freelance / Remote', 'Internships'],
   };
 
@@ -263,11 +333,13 @@ export default function Home() {
 
   const categoriesUI = [
     { name: 'All', icon: Grid },
+    { name: 'Household', icon: HomeIcon },
     { name: 'Electronics', icon: Smartphone },
     { name: 'Vehicles', icon: Car },
     { name: 'Furniture', icon: Sofa },
     { name: 'Fashion', icon: Shirt },
-    { name: 'Books', icon: BookOpen },
+    { name: 'Beauty & Care', icon: Sparkle },
+    { name: 'Books & Sports', icon: BookOpen },
     { name: 'Real Estate', icon: HomeIcon },
     { name: 'Services', icon: Wrench },
     { name: 'Jobs', icon: Briefcase },
@@ -407,7 +479,7 @@ export default function Home() {
                   Buy & Sell Great Items in {selectedCountry}
                 </h2>
                 <p className="text-blue-100 text-xs md:text-sm max-w-2xl mx-auto">
-                  Browse deals on electronics, vehicles, furniture, and more. Log in as a buyer to contact sellers directly.
+                  Browse deals on household goods, bedsheets, electronics, vehicles, and more.
                 </p>
 
                 <div className="max-w-2xl mx-auto pt-2">
@@ -415,7 +487,7 @@ export default function Home() {
                     <Search className="absolute left-4 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder={`Search items or sub-categories in ${selectedCountry}...`}
+                      placeholder={`Search bedsheets, curtains, electronics in ${selectedCountry}...`}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-gray-900 bg-white shadow-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 transition text-sm"
@@ -556,7 +628,7 @@ export default function Home() {
                         <div className="p-4 flex flex-col flex-grow">
                           <div className="flex items-center justify-between gap-1 mb-1">
                             <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-wider truncate">
-                              {item.category || 'General'}
+                              {item.category || 'Household'}
                             </span>
                             {item.sub_category && (
                               <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md truncate">
@@ -627,7 +699,7 @@ export default function Home() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. iPhone 13 128GB or Leather Sofa"
+                    placeholder="e.g. Cotton Bedsheet, Window Curtains, or iPhone 13"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs"
@@ -641,7 +713,7 @@ export default function Home() {
                     <select
                       value={category}
                       onChange={(e) => handleCategoryChange(e.target.value)}
-                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs bg-white font-semibold focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs bg-white font-semibold focus:ring-2 focus:ring-blue-500 cursor-pointer"
                     >
                       {Object.keys(categoryMap).map((catName) => (
                         <option key={catName} value={catName}>
@@ -656,7 +728,7 @@ export default function Home() {
                     <select
                       value={subCategory}
                       onChange={(e) => setSubCategory(e.target.value)}
-                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs bg-white font-semibold focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2.5 border rounded-xl text-gray-800 text-xs bg-white font-semibold focus:ring-2 focus:ring-blue-500 cursor-pointer"
                     >
                       {(categoryMap[category] || []).map((subName) => (
                         <option key={subName} value={subName}>
@@ -673,7 +745,7 @@ export default function Home() {
                     <input
                       type="number"
                       required
-                      placeholder="e.g. 35000"
+                      placeholder="e.g. 1500"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs"
@@ -684,7 +756,7 @@ export default function Home() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. 6 Months old"
+                      placeholder="e.g. Brand New / 6 Months old"
                       value={productAge}
                       onChange={(e) => setProductAge(e.target.value)}
                       className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs"
@@ -707,7 +779,7 @@ export default function Home() {
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
                   <textarea
                     rows={2}
-                    placeholder="Describe item condition, working order, original bill..."
+                    placeholder="Describe item fabric, dimensions, condition, bill..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full p-3 border rounded-xl text-gray-800 text-xs"
@@ -816,7 +888,7 @@ export default function Home() {
                       <div className="flex-grow min-w-0">
                         <div className="flex items-center gap-1 mb-1">
                           <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-                            {item.category || 'Electronics'}
+                            {item.category || 'Household'}
                           </span>
                         </div>
                         <h4 className="font-bold text-gray-900 text-sm truncate">{item.title}</h4>
