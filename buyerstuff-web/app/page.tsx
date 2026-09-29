@@ -14,7 +14,6 @@ import {
   Tag,
   Heart,
   Sparkles,
-  Smartphone,
   Car,
   Sofa,
   Shirt,
@@ -61,7 +60,7 @@ export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-  // Seller Form State
+  // Seller Form State (Electronics removed, default set to Household)
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Household');
@@ -78,7 +77,7 @@ export default function Home() {
   const [fullAddress, setFullAddress] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // Amazon / Flipkart / OLX / Meesho Master Category Map
+  // Category Map without Electronics
   const categoryMap: { [key: string]: string[] } = {
     Household: [
       'Bedsheets & Blankets',
@@ -90,16 +89,6 @@ export default function Home() {
       'Home Decor & Crafts',
       'Cleaning & Storage',
       'Tableware & Dinner Sets',
-    ],
-    Electronics: [
-      'Mobile Phones',
-      'Laptops & Computers',
-      'Audio & Headphones',
-      'Cameras',
-      'TV & Home Appliances',
-      'Smartwatches',
-      'Gaming Consoles',
-      'Accessories & Cables',
     ],
     Vehicles: [
       'Cars',
@@ -331,10 +320,10 @@ export default function Home() {
     }
   }
 
+  // Categories UI list without Electronics
   const categoriesUI = [
     { name: 'All', icon: Grid },
     { name: 'Household', icon: HomeIcon },
-    { name: 'Electronics', icon: Smartphone },
     { name: 'Vehicles', icon: Car },
     { name: 'Furniture', icon: Sofa },
     { name: 'Fashion', icon: Shirt },
@@ -479,7 +468,7 @@ export default function Home() {
                   Buy & Sell Great Items in {selectedCountry}
                 </h2>
                 <p className="text-blue-100 text-xs md:text-sm max-w-2xl mx-auto">
-                  Browse deals on household goods, bedsheets, electronics, vehicles, and more.
+                  Browse deals on household goods, bedsheets, curtains, furniture, vehicles, and more.
                 </p>
 
                 <div className="max-w-2xl mx-auto pt-2">
@@ -487,7 +476,7 @@ export default function Home() {
                     <Search className="absolute left-4 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder={`Search bedsheets, curtains, electronics in ${selectedCountry}...`}
+                      placeholder={`Search bedsheets, curtains, household items in ${selectedCountry}...`}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-gray-900 bg-white shadow-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 transition text-sm"
@@ -699,7 +688,7 @@ export default function Home() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Cotton Bedsheet, Window Curtains, or iPhone 13"
+                    placeholder="e.g. Cotton Bedsheet, Window Curtains, or Wooden Dining Table"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full p-3 border rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs"
